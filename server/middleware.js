@@ -34,6 +34,8 @@ module.exports = (deps) => {
     });
     let xPos = 0;
     let yPos = 0;
+
+    let c = 0;
     for (let i = 0; i < 9; i++) {
       const album = res.locals.albums[i];
       Jimp.read(album.image['#text'])
@@ -48,11 +50,16 @@ module.exports = (deps) => {
             .then(() => {
               Jimp.loadFont('./fonts/open-sans-16-white/open-sans-16-white.fnt')
                 .then((whiteFont) => {
+                  c += i;
                   image.print(whiteFont, 10, 10, `${album.artist} - ${album.name}`, 280);
-                  xPos = Math.floor(i / 3) * 300;
-                  yPos = (i % 3) * 300;
-                  collage.composite(image, yPos, xPos);
+                  yPos = Math.floor(i / 3) * 300;
+                  xPos = (i % 3) * 300;
+                  collage.composite(image, xPos, yPos);
                   collage.write(`./tmp/collage-${moment(new Date()).format('MM-DD')}.png`);
+                  // This is a silly way to handle this.
+                  if (c === 36) {
+                    next();
+                  }
                 })
                 .catch(err => console.error(err));
             })
@@ -60,7 +67,6 @@ module.exports = (deps) => {
         })
         .catch(err => console.error(err));
     }
-    next();
   };
 
   return ({
