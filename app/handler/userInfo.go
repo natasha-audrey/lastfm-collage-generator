@@ -2,7 +2,6 @@ package handler
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -45,10 +44,10 @@ func GetWeeklyTopAlbums(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
-	// fmt.Fprintf(w, "%s", string(responseBodyBytes))
+	w.Header().Set("Content-Type", "application/json")
 	albums := GetAlbums(responseBodyBytes)
 	if albums == nil {
-		fmt.Fprintf(w, "500: Error getting albums!\n")
+		http.Error(w, "Error getting albums", http.StatusInternalServerError)
 		return
 	}
 	js, err := json.Marshal(albums)
@@ -56,6 +55,5 @@ func GetWeeklyTopAlbums(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
 	w.Write(js)
 }
