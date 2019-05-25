@@ -1,4 +1,4 @@
-package main
+package configs
 
 import "os"
 
@@ -14,6 +14,7 @@ type LastFmConfig struct {
 }
 
 // Init Initialize the config
+//
 func (c *LastFmConfig) Init() {
 	c.ApplicationName = os.Getenv("APPLICATION_NAME")
 	c.APIKey = os.Getenv("API_KEY")
