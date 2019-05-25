@@ -12,6 +12,23 @@ import (
 	"github.com/nathanyocum/lastfm-collage-generator/configs"
 )
 
+// GetAlbums maps the album data to the album object
+func GetAlbums(albumData []byte) []model.Album {
+	var result map[string]map[string][]map[string]interface{}
+	json.Unmarshal(albumData, &result)
+	var albums []model.Album
+	for _, value := range result["topalbums"]["album"] {
+		var album model.Album
+		album.Name = value["name"].(string)
+		album.Listens = value["playcount"].(string)
+		album.Artist = value["artist"].(map[string]interface{})["name"].(string)
+		album.Image = value["image"].([]interface{})[2].(map[string]interface{})["#text"].(string)
+
+		albums = append(albums, album)
+	}
+	return albums
+}
+
 // GetWeeklyTopAlbums Returns the weekly tracks
 func GetWeeklyTopAlbums(w http.ResponseWriter, r *http.Request) {
 	var config configs.LastFmConfig
@@ -29,7 +46,7 @@ func GetWeeklyTopAlbums(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// fmt.Fprintf(w, "%s", string(responseBodyBytes))
-	albums := model.GetAlbums(responseBodyBytes)
+	albums := GetAlbums(responseBodyBytes)
 	if albums == nil {
 		fmt.Fprintf(w, "500: Error getting albums!\n")
 		return
