@@ -44,7 +44,6 @@ func GetWeeklyTopAlbums(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
 	albums := GetAlbums(responseBodyBytes)
 	if albums == nil {
 		http.Error(w, "Error getting albums", http.StatusInternalServerError)
@@ -55,5 +54,6 @@ func GetWeeklyTopAlbums(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	w.Header().Set("Content-Type", "application/json")
 	w.Write(js)
 }
