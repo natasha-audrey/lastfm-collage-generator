@@ -2,9 +2,11 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"regexp"
 
 	"github.com/gorilla/mux"
 	"github.com/nathanyocum/lastfm-collage-generator/app/model"
@@ -26,6 +28,38 @@ func GetAlbums(albumData []byte) []model.Album {
 		albums = append(albums, album)
 	}
 	return albums
+}
+
+func downloadImages(albums []model.Album) {
+	for _, album := range albums {
+		if album.Image != "" {
+			response, err := http.Get(album.Image)
+			if err != nil {
+				fmt.Println("Error getting images")
+				log.Fatal(err)
+				return
+			}
+			defer response.Body.Close()
+			fileReg := regexp.MustCompile(`[^0-9A-Za-z_\-]`)
+			artist := fileReg.ReplaceAllString(album.Artist, "_")
+			name := fileReg.ReplaceAllString(album.Name, "_")
+
+			// if _, err := os.Stat("./web/images/" + artist + "_" + name + ".png"); os.IsNotExist(err) {
+			AddText("./web/images/"+artist+"_"+name+".png", 0, 0, []string{album.Artist, album.Name}, response.Body)
+			// file, e := os.Create("./web/images/" + artist + "_" + name + ".png")
+			// if e != nil {
+			// 	fmt.Println("Error making image")
+			// 	log.Fatal(e)
+			// }
+			// defer file.Close()
+
+			// // _, err = io.Copy(file, response.Body)
+			// // if err != nil {
+			// // 	log.Fatal(err)
+			// // }
+		}
+		// }
+	}
 }
 
 // GetWeeklyTopAlbums Returns the weekly tracks
@@ -54,6 +88,7 @@ func GetWeeklyTopAlbums(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	downloadImages(albums)
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(js)
 }

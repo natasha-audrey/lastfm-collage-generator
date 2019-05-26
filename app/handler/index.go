@@ -4,7 +4,7 @@ import (
 	"net/http"
 )
 
-// Index handles the index of the API
+// Index Handles the index page for the server
 func Index(w http.ResponseWriter, r *http.Request) {
 
 }
