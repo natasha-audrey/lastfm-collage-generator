@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Last.fm Collage Generator</title>
+    <link rel="stylesheet" href="index.css" />
+    <meta http-equiv="x-ua-compatible" content="ie=edge" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+  </head>
+  <body>
+    <div class="container">
+      <h1>Last.fm Collage Generator</h1>
+      <form action="/api/v1/weekly/" id="userForm">
+        <label for="username">Last.fm Username</label>
+        <br />
+        <input id="username" name="username" value="" type="text">
+        <select name="size" id="size" value="">
+          <option value="3">3x3</option>
+          <option value="4">4x4</option>
+          <option value="5">5x5</option>
+          <option value="6">6x6</option>
+        </select>
+        <button type="submit">SUBMIT</button>
+      </form>
+    </div>
+    <script src="/js/index.js"></script>
+  </body>
+</html>

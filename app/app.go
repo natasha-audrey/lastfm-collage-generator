@@ -5,10 +5,9 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/nathanyocum/lastfm-collage-generator/configs"
-
 	"github.com/gorilla/mux"
 	"github.com/nathanyocum/lastfm-collage-generator/app/handler"
+	"github.com/nathanyocum/lastfm-collage-generator/configs"
 )
 
 // App sets up router and db
@@ -28,8 +27,9 @@ func (a *App) Init() {
 }
 
 func (a *App) setRouters() {
-	a.Get("/", handler.Index)
 	a.Get("/api/v1/weekly/{user}", handler.GetWeeklyTopAlbums)
+
+	a.Router.PathPrefix("/").Handler(http.FileServer(http.Dir("./web/")))
 }
 
 // Get wraps the router for GET method
