@@ -64,12 +64,28 @@ func downloadImages(albums []model.Album) {
 	}
 }
 
-// GetWeeklyTopAlbums Returns the weekly tracks
-func GetWeeklyTopAlbums(w http.ResponseWriter, r *http.Request) {
+// GetTopAlbums Returns the weekly tracks
+func GetTopAlbums(w http.ResponseWriter, r *http.Request) {
 	var config configs.LastFmConfig
 	vars := mux.Vars(r)
 	config.Init()
-	URL := "http://ws.audioscrobbler.com/2.0/?method=user.gettopalbums&user=" + vars["user"] + "&api_key=" + config.APIKey + "&period=7day&format=json"
+	time := vars["time"]
+	switch time {
+	case "7day":
+	case "1month":
+	case "3month":
+	case "6month":
+	case "12month":
+	case "overall":
+		break
+	default:
+		http.Error(w, `Invalid Param wanted 7day, 1month, 3month, 6month, 12month, or overall`, http.StatusUnprocessableEntity)
+		return
+	}
+	URL := "http://ws.audioscrobbler.com/2.0/?method=user.gettopalbums&user=" +
+		vars["user"] + "&api_key=" +
+		config.APIKey + "&period=" +
+		time + "&format=json"
 	response, err := http.Get(URL)
 	if err != nil {
 		log.Print(err)

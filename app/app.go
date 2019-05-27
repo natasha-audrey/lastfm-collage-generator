@@ -27,7 +27,7 @@ func (a *App) Init() {
 }
 
 func (a *App) setRouters() {
-	a.Get("/api/v1/weekly/{size}/{user}", handler.GetWeeklyTopAlbums)
+	a.Get("/api/v1/{time}/{size}/{user}", handler.GetTopAlbums)
 
 	a.Router.PathPrefix("/").Handler(http.FileServer(http.Dir("./web/")))
 }
