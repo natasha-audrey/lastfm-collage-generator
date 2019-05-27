@@ -137,7 +137,7 @@ func AddText(fileName string, x, y int, labels []string, body io.ReadCloser) {
 	outFile, err = os.Create(fileName)
 
 	ptBlack := freetype.Pt(10, 10+int(c.PointToFixed(size)>>6))
-	ptWhite := freetype.Pt(10, 11+int(c.PointToFixed(size)>>6))
+	ptWhite := freetype.Pt(11, 11+int(c.PointToFixed(size)>>6))
 	for _, label := range labels {
 
 		fg = image.Black
