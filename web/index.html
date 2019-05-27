@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Last.fm Collage Generator</title>
+    <link rel="stylesheet" href="index.css" />
+    <meta http-equiv="x-ua-compatible" content="ie=edge" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+    <link
+      rel="stylesheet"
+      href="https://use.fontawesome.com/releases/v5.8.2/css/all.css"
+      integrity="sha384-oS3vJWv+0UjzBfQzYUhtDYW+Pj2yciDJxpsK1OYPAYjqT085Qq/1cq5FLXAZQ7Ay"
+      crossorigin="anonymous"
+    />
+  </head>
+  <body>
+    <div class="container">
+      <h1>Last.fm Collage Generator</h1>
+      <p>Generate Last.fm collages from scrobble data!</p>
+      <form action="/api/v1/" id="userForm">
+        <label for="username">Last.fm Username</label>
+        <br />
+        <input id="username" name="username" value="" type="text" />
+        <select name="size" id="size" value="3">
+          <option value="3">3x3</option>
+          <option value="4">4x4</option>
+          <option value="5">5x5</option>
+          <option value="6">6x6</option>
+          <option value="7">7x7</option>
+        </select>
+        <select name="time" id="time" value="7day">
+          <option value="7day">Week</option>
+          <option value="1month">Month</option>
+          <option value="3month">3 Month</option>
+          <option value="6month">6 Month</option>
+          <option value="12month">Year</option>
+          <option value="overall">Overall</option>
+        </select>
+        <button type="submit">SUBMIT</button>
+      </form>
+    </div>
+    <script src="/js/index.js"></script>
+  </body>
+</html>

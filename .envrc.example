@@ -1,0 +1,5 @@
+export APPLICATION_NAME='last-fm-api-experiment'
+export API_KEY=''
+export SHARED_SECRET=''
+export REGISTERED_TO='n8yo'
+export PORT=3030
