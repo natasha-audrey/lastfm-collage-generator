@@ -20,7 +20,7 @@ import (
 
 var (
 	dpi      = 72.0
-	fontfile = "./web/fonts/IBMPlexMono-Text.ttf"
+	fontfile = "./web/static/fonts/IBMPlexMono-Text.ttf"
 	size     = 16.0
 	spacing  = 1.2
 )
@@ -94,7 +94,7 @@ func AddText(fileName string, x, y int, labels []string, body io.ReadCloser) {
 	outFile, err := os.Create(fileName)
 	_, err = io.Copy(outFile, body)
 	if err != nil {
-		log.Fatal(err)
+		// log.Fatal(err)
 	}
 
 	outFile.Seek(0, 0)

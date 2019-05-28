@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/gorilla/mux"
 	"github.com/nathanyocum/lastfm-collage-generator/app/handler"
@@ -24,6 +25,8 @@ func (a *App) Init() {
 
 	a.Router = mux.NewRouter().StrictSlash(true)
 	a.setRouters()
+
+	os.Mkdir("./web/images", os.ModePerm)
 }
 
 func (a *App) setRouters() {
@@ -41,9 +44,9 @@ func (a *App) Get(path string, f func(w http.ResponseWriter, r *http.Request)) {
 func (a *App) Run() {
 	if a.Config.Port != "" {
 		fmt.Println("Listening on http://localhost:" + a.Config.Port)
-		log.Fatal(http.ListenAndServe(":"+a.Config.Port, a.Router))
+		log.Fatal(http.ListenAndServe("0.0.0.0:"+a.Config.Port, a.Router))
 	} else {
 		fmt.Println("Listening on http://localhost:5000/ (no env vars)")
-		log.Fatal(http.ListenAndServe(":5000", a.Router))
+		log.Fatal(http.ListenAndServe("0.0.0.0:5000", a.Router))
 	}
 }

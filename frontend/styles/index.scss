@@ -1,0 +1,39 @@
+$font-stack:    Helvetica, sans-serif;
+$black: #121212;
+$grey: #e0e0e0;
+$primary: #ba68c8;
+
+@mixin display-grid {
+  display: -ms-grid;
+  display: grid;
+}
+
+body {
+  font: 100% $font-stack;
+  color: $black;
+  background-color: #ffffff;
+  margin: 0;
+}
+
+h1 {
+  color: $primary;
+  padding: 12px;
+}
+
+.container {
+  padding: 0px 8px;
+  text-align: center;
+  @include display-grid;
+  min-height: 100vh;
+  grid-template-rows: 2fr fit-content(100%) fit-content(100%) 2fr;
+}
+
+.bottom {
+  align-self: end;
+  padding: 12px;
+}
+
+.title {
+  font-size: 48px;
+  align-self: end;
+}
