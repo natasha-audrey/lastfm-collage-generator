@@ -1,17 +1,19 @@
-$font-stack:    Helvetica, sans-serif;
+$font-stack: 'IBM Plex Sans', 'Helvetica Neue', Arial, sans-serif;
 $black: #121212;
 $grey: #e0e0e0;
+$white: #f5f5f5;
 $primary: #ba68c8;
+$primaryDark: #883997;
+$primaryLight: #ee98fb;
+$secondary: #76c868;
 
 @mixin display-grid {
-  display: -ms-grid;
   display: grid;
 }
 
 body {
   font: 100% $font-stack;
-  color: $black;
-  background-color: #ffffff;
+  color: $primary;
   margin: 0;
 }
 
@@ -26,6 +28,9 @@ h1 {
   @include display-grid;
   min-height: 100vh;
   grid-template-rows: 2fr fit-content(100%) fit-content(100%) 2fr;
+  p {
+    color: $primaryDark;
+  }
 }
 
 .bottom {
@@ -36,4 +41,47 @@ h1 {
 .title {
   font-size: 48px;
   align-self: end;
+}
+
+.userForm {
+  background-color: $grey;
+  @include display-grid;
+  grid-template-columns: auto auto;
+  width: 100%;
+  max-width: 600px;
+  justify-self: center;
+  label {
+    grid-column: 1 / span 2;
+    color: $primaryDark;
+  }
+  input {
+    min-height: 56px;
+    width: 66%;
+    box-shadow: 0px 2px 5px 0px rgba(0, 0, 0, 0.2);
+    margin: 8px;
+    color: $primaryLight;
+    background: $white;
+    font-size: 20px;
+    border: none;
+    padding: 0px 8px;
+  }
+  select {
+    background: $primary;
+    min-height: 56px;
+    border: none;
+    color: $white;
+    padding: 0px 8px;
+    margin: 0px 1px;
+  }
+  button {
+    grid-column: 1 / span 2;
+    width: 50%;
+    justify-self: center;
+    min-height: 56px;
+    background: #76c868;
+    color: $white;
+    border: none;
+    box-shadow: 0px 4px 10px 0px rgba(0, 0, 0, 0.2);
+    margin: 8px 0px;
+  }
 }

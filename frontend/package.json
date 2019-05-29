@@ -7,7 +7,7 @@
     "dev": "next",
     "build": "next build",
     "start": "next start",
-    "export": "next export -o ../web/"
+    "export": "next export -o ../web/ && mkdir -p ../web/images"
   },
   "repository": {
     "type": "git",
@@ -20,6 +20,7 @@
   },
   "homepage": "https://github.com/NathanYocum/lastfm-collage-generator#readme",
   "dependencies": {
+    "@ibm/plex": "^1.4.1",
     "@zeit/next-sass": "^1.0.1",
     "next": "^8.1.0",
     "node-sass": "^4.12.0",
@@ -31,6 +32,8 @@
     "eslint-config-airbnb": "^17.1.0",
     "eslint-plugin-import": "^2.17.3",
     "eslint-plugin-jsx-a11y": "^6.2.1",
-    "eslint-plugin-react": "^7.13.0"
+    "eslint-plugin-prettier": "^3.1.0",
+    "eslint-plugin-react": "^7.13.0",
+    "prettier": "^1.17.1"
   }
 }
