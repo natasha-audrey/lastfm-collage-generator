@@ -7,7 +7,7 @@
     "dev": "next",
     "build": "next build",
     "start": "next start",
-    "export": "next export -o ../web/"
+    "export": "next export -o ../web/ && mkdir -p ../web/images"
   },
   "repository": {
     "type": "git",
