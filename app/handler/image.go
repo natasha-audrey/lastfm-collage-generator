@@ -25,89 +25,31 @@ var (
 	spacing  = 1.2
 )
 
-// AddTextNoImage writes text when no image available
-func AddTextNoImage(fileName string, x, y int, labels []string) {
-	outFile, err := os.Create(fileName)
-	bg, fg := image.Black, image.White
-
-	fontBytes, err := ioutil.ReadFile(fontfile)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	f, err := freetype.ParseFont(fontBytes)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	rgba := image.NewRGBA(image.Rect(0, 0, 300, 300))
-	draw.Draw(rgba, rgba.Bounds(), bg, image.ZP, draw.Src)
-	c := freetype.NewContext()
-	c.SetDPI(dpi)
-	c.SetFont(f)
-	c.SetFontSize(size)
-	c.SetClip(rgba.Bounds())
-	c.SetDst(rgba)
-	c.SetSrc(fg)
-	c.SetHinting(font.HintingFull)
-
-	// Save that RGBA image to disk.
-	outFile, err = os.Create(fileName)
-
-	pt := freetype.Pt(10, 10+int(c.PointToFixed(size)>>6))
-	for _, label := range labels {
-
-		if len(label) > 29 {
-			_, err = c.DrawString(string(label[0:28]), pt)
-			pt.Y += c.PointToFixed(size)
-			_, err = c.DrawString(string(label[28:len(label)]), pt)
-		} else {
-			_, err = c.DrawString(label, pt)
-		}
-		if err != nil {
-			log.Println(err)
-			return
-		}
-		pt.Y += c.PointToFixed(size * spacing)
-	}
-
-	if err != nil {
-		log.Println(err)
-		os.Exit(1)
-	}
-	defer outFile.Close()
-	b := bufio.NewWriter(outFile)
-	err = png.Encode(b, rgba)
-	if err != nil {
-		log.Println(err)
-		os.Exit(1)
-	}
-	err = b.Flush()
-	if err != nil {
-		log.Println(err)
-		os.Exit(1)
-	}
-}
-
 // AddText adds text at given x and y position with a given label
 func AddText(fileName string, x, y int, labels []string, body io.ReadCloser) {
 	outFile, err := os.Create(fileName)
-	_, err = io.Copy(outFile, body)
-	if err != nil {
-		// log.Fatal(err)
-	}
-
-	outFile.Seek(0, 0)
-	bg, err := jpeg.Decode(outFile)
-	if err != nil {
-		outFile.Seek(0, 0)
-		bg, err = png.Decode(outFile)
+	if body != nil {
+		_, err = io.Copy(outFile, body)
 		if err != nil {
-			log.Println(err)
-			return
+			// log.Fatal(err)
 		}
 	}
 
+	outFile.Seek(0, 0)
+	var bg image.Image
+	if body != nil {
+		bg, err = jpeg.Decode(outFile)
+		if err != nil {
+			outFile.Seek(0, 0)
+			bg, err = png.Decode(outFile)
+			if err != nil {
+				log.Println(err)
+				return
+			}
+		}
+	} else {
+		bg = image.Black
+	}
 	// Read the font data.
 	fontBytes, err := ioutil.ReadFile(fontfile)
 	if err != nil {
@@ -122,7 +64,13 @@ func AddText(fileName string, x, y int, labels []string, body io.ReadCloser) {
 
 	// Initialize the context.
 	fg := image.Black
-	rgba := image.NewRGBA(image.Rect(0, 0, bg.Bounds().Dx(), bg.Bounds().Dy()))
+	// rgba := body == nil ? image.NewRGBA(image.Rect(0, 0, 300, 300))  : image.NewRGBA(image.Rect(0, 0, bg.Bounds().Dx(), bg.Bounds().Dy()))
+	var rgba draw.Image
+	if body == nil {
+		rgba = image.NewRGBA(image.Rect(0, 0, 300, 300))
+	} else {
+		rgba = image.NewRGBA(image.Rect(0, 0, bg.Bounds().Dx(), bg.Bounds().Dy()))
+	}
 	draw.Draw(rgba, rgba.Bounds(), bg, image.ZP, draw.Src)
 	c := freetype.NewContext()
 	c.SetDPI(dpi)
