@@ -13,12 +13,11 @@ import (
 	"os"
 	"regexp"
 
+	"github.com/golang/freetype"
+	"golang.org/x/image/font"
 	"golang.org/x/image/math/fixed"
 
 	"github.com/nathanyocum/lastfm-collage-generator/app/model"
-
-	"github.com/golang/freetype"
-	"golang.org/x/image/font"
 )
 
 var (
@@ -50,7 +49,7 @@ func writeText(fg *image.Uniform, label string,
 
 // AddText adds text at given x and y position with a given label
 func AddText(fileName string, x, y int, labels []string,
-	body io.ReadCloser, ch chan string) {
+	body io.ReadCloser) {
 
 	outFile, err := os.Create(fileName)
 	if body != nil {
@@ -134,7 +133,6 @@ func AddText(fileName string, x, y int, labels []string,
 		log.Println(err)
 		return
 	}
-	ch <- fileName
 }
 
 // MakeCollage makes a collage of albums given an array of albums
