@@ -39,6 +39,7 @@ func GetAlbums(albumData []byte) []model.Album {
 }
 
 func downloadImages(albums []model.Album) {
+	c := make(chan string)
 	for _, album := range albums {
 		if album.Image != "" {
 
@@ -51,15 +52,16 @@ func downloadImages(albums []model.Album) {
 					return
 				}
 				defer response.Body.Close()
-				AddText(
+				go AddText(
 					album.LocalImage,
 					0,
 					0,
 					[]string{album.Artist, album.Name},
-					response.Body)
+					response.Body,
+					c)
 			}
 		} else {
-			AddText(album.LocalImage, 0, 0, []string{album.Artist, album.Name}, nil)
+			go AddText(album.LocalImage, 0, 0, []string{album.Artist, album.Name}, nil, c)
 		}
 	}
 }
