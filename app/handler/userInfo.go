@@ -51,7 +51,7 @@ func downloadImages(albums []model.Album) {
 					return
 				}
 				defer response.Body.Close()
-				go AddText(
+				AddText(
 					album.LocalImage,
 					0,
 					0,
@@ -59,7 +59,7 @@ func downloadImages(albums []model.Album) {
 					response.Body)
 			}
 		} else {
-			go AddText(album.LocalImage, 0, 0, []string{album.Artist, album.Name}, nil)
+			AddText(album.LocalImage, 0, 0, []string{album.Artist, album.Name}, nil)
 		}
 	}
 }
