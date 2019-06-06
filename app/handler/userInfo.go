@@ -79,7 +79,8 @@ func GetTopAlbums(w http.ResponseWriter, r *http.Request) {
 	case "overall":
 		break
 	default:
-		http.Error(w, `Invalid Param wanted 7day, 1month, 3month, 6month, 12month, or overall`, http.StatusUnprocessableEntity)
+		http.Error(w, `Invalid Param wanted 7day, 1month, 3month, 6month, 12month, or overall`,
+			http.StatusUnprocessableEntity)
 		return
 	}
 	URL := "http://ws.audioscrobbler.com/2.0/?method=user.gettopalbums&user=" +
@@ -114,7 +115,8 @@ func GetTopAlbums(w http.ResponseWriter, r *http.Request) {
 		}
 		png.Encode(w, image)
 	} else {
-		http.Error(w, vars["size"]+" invalid, needs to be between 0 and 7", http.StatusUnprocessableEntity)
+		http.Error(w, vars["size"]+" invalid, needs to be between 0 and 7",
+			http.StatusUnprocessableEntity)
 		return
 	}
 }

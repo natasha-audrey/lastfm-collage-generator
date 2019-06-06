@@ -2,7 +2,7 @@ package handler
 
 import (
 	"bufio"
-	"errors"
+	"fmt"
 	"image"
 	"image/draw"
 	"image/jpeg"
@@ -10,6 +10,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"regexp"
 
@@ -153,15 +154,33 @@ func MakeCollage(albums []model.Album, size int) (im image.Image, err error) {
 			file.Seek(0, 0)
 			tempImage, err := png.Decode(file)
 			if err != nil {
-				return nil, errors.New("Could not decode image")
-			}
-			tempPoint := image.Point{xPos, yPos}
-			tempRect := image.Rectangle{tempPoint, tempPoint.Add(tempImage.Bounds().Size())}
-			draw.Draw(imageToReturn, tempRect, tempImage, image.ZP, draw.Src)
-			xPos += tempImage.Bounds().Dx()
-			if (i+1)%size == 0 {
-				xPos = 0
-				yPos += tempImage.Bounds().Dy()
+				tempImage, err = jpeg.Decode(file)
+				if err != nil {
+					// Some kind of error happened, regenerate the image without an album
+					response, err := http.Get(albums[i].Image)
+					if err != nil {
+						fmt.Println("Error getting images")
+						AddText(albums[i].LocalImage, 0, 0, []string{albums[i].Artist, albums[i].Name}, nil)
+						i--
+					}
+					defer response.Body.Close()
+					AddText(
+						albums[i].LocalImage,
+						0,
+						0,
+						[]string{albums[i].Artist, albums[i].Name},
+						response.Body)
+					i--
+				}
+			} else {
+				tempPoint := image.Point{xPos, yPos}
+				tempRect := image.Rectangle{tempPoint, tempPoint.Add(tempImage.Bounds().Size())}
+				draw.Draw(imageToReturn, tempRect, tempImage, image.ZP, draw.Src)
+				xPos += tempImage.Bounds().Dx()
+				if (i+1)%size == 0 {
+					xPos = 0
+					yPos += tempImage.Bounds().Dy()
+				}
 			}
 		}
 	}
