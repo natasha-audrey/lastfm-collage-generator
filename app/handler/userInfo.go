@@ -51,7 +51,7 @@ func downloadImages(albums []model.Album) {
 					return
 				}
 				defer response.Body.Close()
-				AddText(
+				go AddText(
 					album.LocalImage,
 					0,
 					0,
@@ -59,7 +59,7 @@ func downloadImages(albums []model.Album) {
 					response.Body)
 			}
 		} else {
-			AddText(album.LocalImage, 0, 0, []string{album.Artist, album.Name}, nil)
+			go AddText(album.LocalImage, 0, 0, []string{album.Artist, album.Name}, nil)
 		}
 	}
 }
@@ -88,7 +88,7 @@ func GetTopAlbums(w http.ResponseWriter, r *http.Request) {
 		time + "&format=json"
 	response, err := http.Get(URL)
 	if err != nil {
-		log.Print(err)
+		log.Println(err)
 	}
 	defer response.Body.Close()
 	responseBodyBytes, err := ioutil.ReadAll(response.Body)

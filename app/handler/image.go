@@ -11,11 +11,13 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-
-	"github.com/nathanyocum/lastfm-collage-generator/app/model"
+	"regexp"
 
 	"github.com/golang/freetype"
 	"golang.org/x/image/font"
+	"golang.org/x/image/math/fixed"
+
+	"github.com/nathanyocum/lastfm-collage-generator/app/model"
 )
 
 var (
@@ -25,13 +27,36 @@ var (
 	spacing  = 1.2
 )
 
+func writeText(fg *image.Uniform, label string,
+	c *freetype.Context, pt fixed.Point26_6) {
+
+	c.SetSrc(fg)
+	if len(label) > 29 {
+		re := regexp.MustCompile(`.*\s`)
+		lb := re.FindStringSubmatch(label[0:28])
+		if lb[0] != "" {
+			writeText(fg, string(label[0:len(lb[0])]), c, pt)
+			writeText(fg, string(label[len(lb[0]):len(label)]), c,
+				fixed.Point26_6{X: pt.X, Y: pt.Y + c.PointToFixed(size)})
+			return
+		}
+	}
+	_, err := c.DrawString(label, pt)
+	if err != nil {
+		log.Println(err)
+	}
+}
+
 // AddText adds text at given x and y position with a given label
-func AddText(fileName string, x, y int, labels []string, body io.ReadCloser) {
+func AddText(fileName string, x, y int, labels []string,
+	body io.ReadCloser) {
+
 	outFile, err := os.Create(fileName)
 	if body != nil {
 		_, err = io.Copy(outFile, body)
 		if err != nil {
-			// log.Fatal(err)
+			log.Println(err)
+			return
 		}
 	}
 
@@ -83,52 +108,30 @@ func AddText(fileName string, x, y int, labels []string, body io.ReadCloser) {
 
 	// Save that RGBA image to disk.
 	outFile, err = os.Create(fileName)
+	if err != nil {
+		log.Println(err)
+		return
+	}
 
 	ptBlack := freetype.Pt(10, 10+int(c.PointToFixed(size)>>6))
 	ptWhite := freetype.Pt(11, 11+int(c.PointToFixed(size)>>6))
 	for _, label := range labels {
-
-		fg = image.Black
-		c.SetSrc(fg)
-		if len(label) > 29 {
-			_, err = c.DrawString(string(label[0:28]), ptBlack)
-			ptBlack.Y += c.PointToFixed(size)
-			_, err = c.DrawString(string(label[28:len(label)]), ptBlack)
-		} else {
-			_, err = c.DrawString(label, ptBlack)
-		}
-		fg = image.White
-		c.SetSrc(fg)
-		if len(label) > 29 {
-			_, err = c.DrawString(string(label[0:28]), ptWhite)
-			ptWhite.Y += c.PointToFixed(size)
-			_, err = c.DrawString(string(label[28:len(label)]), ptWhite)
-		} else {
-			_, err = c.DrawString(label, ptWhite)
-		}
-		if err != nil {
-			log.Println(err)
-			return
-		}
+		writeText(image.Black, label, c, ptBlack)
+		writeText(image.White, label, c, ptWhite)
 		ptBlack.Y += c.PointToFixed(size * spacing)
 		ptWhite.Y += c.PointToFixed(size * spacing)
-	}
-
-	if err != nil {
-		log.Println(err)
-		os.Exit(1)
 	}
 	defer outFile.Close()
 	b := bufio.NewWriter(outFile)
 	err = png.Encode(b, rgba)
 	if err != nil {
 		log.Println(err)
-		os.Exit(1)
+		return
 	}
 	err = b.Flush()
 	if err != nil {
 		log.Println(err)
-		os.Exit(1)
+		return
 	}
 }
 
@@ -139,31 +142,26 @@ func MakeCollage(albums []model.Album, size int) (im image.Image, err error) {
 	draw.Draw(imageToReturn, imageToReturn.Bounds(), bg, image.ZP, draw.Src)
 	xPos := 0
 	yPos := 0
-	hasNoImage := false
 	for i := 0; i < size*size && i < len(albums); i++ {
 		if albums[i].LocalImage != "" {
 			file, err := os.Open(albums[i].LocalImage)
 			if err != nil {
-				if albums[i].Image == "" {
-					hasNoImage = true
-				}
-				// return nil, errors.New("Could not open" + albums[i].LocalImage)
+				log.Println(err)
+				return nil, err
 			}
 
 			file.Seek(0, 0)
-			if !hasNoImage {
-				tempImage, err := png.Decode(file)
-				if err != nil {
-					return nil, errors.New("Could not decode image")
-				}
-				tempPoint := image.Point{xPos, yPos}
-				tempRect := image.Rectangle{tempPoint, tempPoint.Add(tempImage.Bounds().Size())}
-				draw.Draw(imageToReturn, tempRect, tempImage, image.ZP, draw.Src)
-				xPos += tempImage.Bounds().Dx()
-				if (i+1)%size == 0 {
-					xPos = 0
-					yPos += tempImage.Bounds().Dy()
-				}
+			tempImage, err := png.Decode(file)
+			if err != nil {
+				return nil, errors.New("Could not decode image")
+			}
+			tempPoint := image.Point{xPos, yPos}
+			tempRect := image.Rectangle{tempPoint, tempPoint.Add(tempImage.Bounds().Size())}
+			draw.Draw(imageToReturn, tempRect, tempImage, image.ZP, draw.Src)
+			xPos += tempImage.Bounds().Dx()
+			if (i+1)%size == 0 {
+				xPos = 0
+				yPos += tempImage.Bounds().Dy()
 			}
 		}
 	}
