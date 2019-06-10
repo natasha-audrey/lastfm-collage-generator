@@ -10,7 +10,6 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
-	"net/http"
 	"os"
 	"regexp"
 
@@ -50,13 +49,14 @@ func writeText(fg *image.Uniform, label string,
 
 // AddText adds text at given x and y position with a given label
 func AddText(fileName string, x, y int, labels []string,
-	body io.ReadCloser) {
+	body io.ReadCloser, ch chan string) {
 
 	outFile, err := os.Create(fileName)
 	if body != nil {
 		_, err = io.Copy(outFile, body)
 		if err != nil {
 			log.Println(err)
+			ch <- fileName
 			return
 		}
 	}
@@ -70,6 +70,7 @@ func AddText(fileName string, x, y int, labels []string,
 			bg, err = png.Decode(outFile)
 			if err != nil {
 				log.Println(err)
+				ch <- fileName
 				return
 			}
 		}
@@ -80,11 +81,13 @@ func AddText(fileName string, x, y int, labels []string,
 	fontBytes, err := ioutil.ReadFile(fontfile)
 	if err != nil {
 		log.Println(err)
+		ch <- fileName
 		return
 	}
 	f, err := freetype.ParseFont(fontBytes)
 	if err != nil {
 		log.Println(err)
+		ch <- fileName
 		return
 	}
 
@@ -111,6 +114,7 @@ func AddText(fileName string, x, y int, labels []string,
 	outFile, err = os.Create(fileName)
 	if err != nil {
 		log.Println(err)
+		ch <- fileName
 		return
 	}
 
@@ -127,12 +131,20 @@ func AddText(fileName string, x, y int, labels []string,
 	err = png.Encode(b, rgba)
 	if err != nil {
 		log.Println(err)
+		ch <- fileName
 		return
 	}
 	err = b.Flush()
 	if err != nil {
 		log.Println(err)
+		ch <- fileName
 		return
+	}
+	if ch != nil {
+		ch <- fileName
+	}
+	if body != nil {
+		body.Close()
 	}
 }
 
@@ -154,22 +166,12 @@ func MakeCollage(albums []model.Album, size int) (im image.Image, err error) {
 			file.Seek(0, 0)
 			tempImage, err := png.Decode(file)
 			if err != nil {
+				fmt.Println(err)
 				tempImage, err = jpeg.Decode(file)
 				if err != nil {
 					// Some kind of error happened, regenerate the image without an album
-					response, err := http.Get(albums[i].Image)
-					if err != nil {
-						fmt.Println("Error getting images")
-						AddText(albums[i].LocalImage, 0, 0, []string{albums[i].Artist, albums[i].Name}, nil)
-						i--
-					}
-					defer response.Body.Close()
-					AddText(
-						albums[i].LocalImage,
-						0,
-						0,
-						[]string{albums[i].Artist, albums[i].Name},
-						response.Body)
+					log.Println("Error getting images", albums[i].LocalImage)
+					AddText(albums[i].LocalImage, 0, 0, []string{albums[i].Artist, albums[i].Name}, nil, nil)
 					i--
 				}
 			} else {
