@@ -17,7 +17,7 @@ import (
 )
 
 // GetAlbums maps the album data to the album object
-func GetAlbums(albumData []byte) []model.Album {
+func GetAlbums(sizeSq int, albumData []byte) []model.Album {
 	var result map[string]map[string][]map[string]interface{}
 	json.Unmarshal(albumData, &result)
 	var albums []model.Album
@@ -34,14 +34,21 @@ func GetAlbums(albumData []byte) []model.Album {
 
 		albums = append(albums, album)
 	}
-	downloadImages(albums)
+	ch := make(chan string)
+	downloadImages(albums[0:(sizeSq)], ch)
+	for i := 0; i < sizeSq; i++ {
+		v := <-ch
+		if v == "" {
+			log.Printf("Error generating %s\n", v)
+		}
+	}
+	close(ch)
 	return albums
 }
 
-func downloadImages(albums []model.Album) {
+func downloadImages(albums []model.Album, ch chan string) {
 	for _, album := range albums {
 		if album.Image != "" {
-
 			// If image exists don't bother making a new one
 			if _, err := os.Stat(album.LocalImage); os.IsNotExist(err) {
 				response, err := http.Get(album.Image)
@@ -50,16 +57,20 @@ func downloadImages(albums []model.Album) {
 					log.Fatal(err)
 					return
 				}
-				defer response.Body.Close()
 				go AddText(
 					album.LocalImage,
 					0,
 					0,
 					[]string{album.Artist, album.Name},
-					response.Body)
+					response.Body,
+					ch)
+			} else {
+				go func() {
+					ch <- album.LocalImage
+				}()
 			}
 		} else {
-			go AddText(album.LocalImage, 0, 0, []string{album.Artist, album.Name}, nil)
+			go AddText(album.LocalImage, 0, 0, []string{album.Artist, album.Name}, nil, ch)
 		}
 	}
 }
@@ -79,7 +90,8 @@ func GetTopAlbums(w http.ResponseWriter, r *http.Request) {
 	case "overall":
 		break
 	default:
-		http.Error(w, `Invalid Param wanted 7day, 1month, 3month, 6month, 12month, or overall`, http.StatusUnprocessableEntity)
+		http.Error(w, `Invalid Param wanted 7day, 1month, 3month, 6month, 12month, or overall`,
+			http.StatusUnprocessableEntity)
 		return
 	}
 	URL := "http://ws.audioscrobbler.com/2.0/?method=user.gettopalbums&user=" +
@@ -96,16 +108,17 @@ func GetTopAlbums(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
-	albums := GetAlbums(responseBodyBytes)
+	size, err := strconv.Atoi(vars["size"])
+	if err != nil {
+		http.Error(w, "Size not a number", http.StatusUnprocessableEntity)
+		return
+	}
+	albums := GetAlbums(size*size, responseBodyBytes)
 	if albums == nil {
 		http.Error(w, "Error getting albums", http.StatusInternalServerError)
 		return
 	}
 
-	size, err := strconv.Atoi(vars["size"])
-	if err != nil {
-		http.Error(w, "Size not a number", http.StatusUnprocessableEntity)
-	}
 	if size < 8 && size > 0 {
 		image, err := MakeCollage(albums, size)
 		if err != nil || image == nil {
@@ -114,7 +127,8 @@ func GetTopAlbums(w http.ResponseWriter, r *http.Request) {
 		}
 		png.Encode(w, image)
 	} else {
-		http.Error(w, vars["size"]+" invalid, needs to be between 0 and 7", http.StatusUnprocessableEntity)
+		http.Error(w, vars["size"]+" invalid, needs to be between 0 and 7",
+			http.StatusUnprocessableEntity)
 		return
 	}
 }

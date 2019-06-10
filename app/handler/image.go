@@ -2,7 +2,7 @@ package handler
 
 import (
 	"bufio"
-	"errors"
+	"fmt"
 	"image"
 	"image/draw"
 	"image/jpeg"
@@ -49,13 +49,14 @@ func writeText(fg *image.Uniform, label string,
 
 // AddText adds text at given x and y position with a given label
 func AddText(fileName string, x, y int, labels []string,
-	body io.ReadCloser) {
+	body io.ReadCloser, ch chan string) {
 
 	outFile, err := os.Create(fileName)
 	if body != nil {
 		_, err = io.Copy(outFile, body)
 		if err != nil {
-			log.Println(err)
+			log.Println(fileName, err)
+			ch <- ""
 			return
 		}
 	}
@@ -68,7 +69,8 @@ func AddText(fileName string, x, y int, labels []string,
 			outFile.Seek(0, 0)
 			bg, err = png.Decode(outFile)
 			if err != nil {
-				log.Println(err)
+				log.Println(fileName, err)
+				ch <- ""
 				return
 			}
 		}
@@ -78,12 +80,14 @@ func AddText(fileName string, x, y int, labels []string,
 	// Read the font data.
 	fontBytes, err := ioutil.ReadFile(fontfile)
 	if err != nil {
-		log.Println(err)
+		log.Println(fileName, err)
+		ch <- ""
 		return
 	}
 	f, err := freetype.ParseFont(fontBytes)
 	if err != nil {
-		log.Println(err)
+		log.Println(fileName, err)
+		ch <- ""
 		return
 	}
 
@@ -109,7 +113,8 @@ func AddText(fileName string, x, y int, labels []string,
 	// Save that RGBA image to disk.
 	outFile, err = os.Create(fileName)
 	if err != nil {
-		log.Println(err)
+		log.Println(fileName, err)
+		ch <- ""
 		return
 	}
 
@@ -125,13 +130,21 @@ func AddText(fileName string, x, y int, labels []string,
 	b := bufio.NewWriter(outFile)
 	err = png.Encode(b, rgba)
 	if err != nil {
-		log.Println(err)
+		log.Println(fileName, err)
+		ch <- ""
 		return
 	}
 	err = b.Flush()
 	if err != nil {
-		log.Println(err)
+		log.Println(fileName, err)
+		ch <- ""
 		return
+	}
+	if ch != nil {
+		ch <- fileName
+	}
+	if body != nil {
+		body.Close()
 	}
 }
 
@@ -153,15 +166,23 @@ func MakeCollage(albums []model.Album, size int) (im image.Image, err error) {
 			file.Seek(0, 0)
 			tempImage, err := png.Decode(file)
 			if err != nil {
-				return nil, errors.New("Could not decode image")
-			}
-			tempPoint := image.Point{xPos, yPos}
-			tempRect := image.Rectangle{tempPoint, tempPoint.Add(tempImage.Bounds().Size())}
-			draw.Draw(imageToReturn, tempRect, tempImage, image.ZP, draw.Src)
-			xPos += tempImage.Bounds().Dx()
-			if (i+1)%size == 0 {
-				xPos = 0
-				yPos += tempImage.Bounds().Dy()
+				fmt.Println(err)
+				tempImage, err = jpeg.Decode(file)
+				if err != nil {
+					// Some kind of error happened, regenerate the image without an album
+					log.Println("Error getting images", albums[i].LocalImage)
+					AddText(albums[i].LocalImage, 0, 0, []string{albums[i].Artist, albums[i].Name}, nil, nil)
+					i--
+				}
+			} else {
+				tempPoint := image.Point{xPos, yPos}
+				tempRect := image.Rectangle{tempPoint, tempPoint.Add(tempImage.Bounds().Size())}
+				draw.Draw(imageToReturn, tempRect, tempImage, image.ZP, draw.Src)
+				xPos += tempImage.Bounds().Dx()
+				if (i+1)%size == 0 {
+					xPos = 0
+					yPos += tempImage.Bounds().Dy()
+				}
 			}
 		}
 	}
