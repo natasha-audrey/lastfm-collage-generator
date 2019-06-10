@@ -17,7 +17,7 @@ import (
 )
 
 // GetAlbums maps the album data to the album object
-func GetAlbums(size int, albumData []byte) []model.Album {
+func GetAlbums(sizeSq int, albumData []byte) []model.Album {
 	var result map[string]map[string][]map[string]interface{}
 	json.Unmarshal(albumData, &result)
 	var albums []model.Album
@@ -35,9 +35,12 @@ func GetAlbums(size int, albumData []byte) []model.Album {
 		albums = append(albums, album)
 	}
 	ch := make(chan string)
-	downloadImages(albums[0:(size)], ch)
-	for i := 0; i < size; i++ {
-		<-ch
+	downloadImages(albums[0:(sizeSq)], ch)
+	for i := 0; i < sizeSq; i++ {
+		v := <-ch
+		if v == "" {
+			log.Printf("Error generating %s\n", v)
+		}
 	}
 	close(ch)
 	return albums
@@ -63,7 +66,6 @@ func downloadImages(albums []model.Album, ch chan string) {
 					ch)
 			} else {
 				go func() {
-					log.Printf(album.LocalImage)
 					ch <- album.LocalImage
 				}()
 			}

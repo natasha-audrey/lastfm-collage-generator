@@ -55,8 +55,8 @@ func AddText(fileName string, x, y int, labels []string,
 	if body != nil {
 		_, err = io.Copy(outFile, body)
 		if err != nil {
-			log.Println(err)
-			ch <- fileName
+			log.Println(fileName, err)
+			ch <- ""
 			return
 		}
 	}
@@ -69,8 +69,8 @@ func AddText(fileName string, x, y int, labels []string,
 			outFile.Seek(0, 0)
 			bg, err = png.Decode(outFile)
 			if err != nil {
-				log.Println(err)
-				ch <- fileName
+				log.Println(fileName, err)
+				ch <- ""
 				return
 			}
 		}
@@ -80,14 +80,14 @@ func AddText(fileName string, x, y int, labels []string,
 	// Read the font data.
 	fontBytes, err := ioutil.ReadFile(fontfile)
 	if err != nil {
-		log.Println(err)
-		ch <- fileName
+		log.Println(fileName, err)
+		ch <- ""
 		return
 	}
 	f, err := freetype.ParseFont(fontBytes)
 	if err != nil {
-		log.Println(err)
-		ch <- fileName
+		log.Println(fileName, err)
+		ch <- ""
 		return
 	}
 
@@ -113,8 +113,8 @@ func AddText(fileName string, x, y int, labels []string,
 	// Save that RGBA image to disk.
 	outFile, err = os.Create(fileName)
 	if err != nil {
-		log.Println(err)
-		ch <- fileName
+		log.Println(fileName, err)
+		ch <- ""
 		return
 	}
 
@@ -130,14 +130,14 @@ func AddText(fileName string, x, y int, labels []string,
 	b := bufio.NewWriter(outFile)
 	err = png.Encode(b, rgba)
 	if err != nil {
-		log.Println(err)
-		ch <- fileName
+		log.Println(fileName, err)
+		ch <- ""
 		return
 	}
 	err = b.Flush()
 	if err != nil {
-		log.Println(err)
-		ch <- fileName
+		log.Println(fileName, err)
+		ch <- ""
 		return
 	}
 	if ch != nil {
