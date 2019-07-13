@@ -6,7 +6,7 @@ with friends. Written in Go with a React frontend.
 ## Installation
 
 ```
-  go get github.com/NathanYocum/lastfm-collage-generator
+  go get github.com/nathanyocum/lastfm-collage-generator
   cd $GOPATH/src/github.com/nathanyocum/lastfm-collage-generator/frontend
   npm i
   npm run build
