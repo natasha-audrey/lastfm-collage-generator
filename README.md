@@ -1,3 +1,14 @@
+<details>
+<summary>
+Table of Contents
+</summary>
+
+- [last-fm-collage-generator](#last-fm-collage-generator)
+  - [Environment Variables](#environment-variables)
+  - [Generating LastFM API keys.](#generating-lastfm-api-keys)
+
+</details>
+
 # last-fm-collage-generator
 
 Tool to generate last-fm collages. This is a personal project - not really meant
