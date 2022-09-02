@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 )
 
-func generateCollage(tf clients.TimeFrame) {
+func generateCollage(tf clients.TimeFrame, size int) {
 	client := clients.NewLastFmClientFromHTTP(&http.Client{})
 	res, err := client.GetTopAlbums(tf, "n8yo")
 	if err != nil {
@@ -22,14 +22,14 @@ func generateCollage(tf clients.TimeFrame) {
 		panic(err)
 	}
 	pngPath := "./" + tf.String() + ".png"
-	workers.Collage{}.MakeCollage(albums, 5, pngPath)
+	workers.Collage{}.MakeCollage(albums, size, pngPath)
 }
 
 func main() {
 	newpath := filepath.Join(".", "generated")
 	os.MkdirAll(newpath, os.ModePerm)
-	generateCollage(clients.Month)
-	generateCollage(clients.ThreeMonth)
-	generateCollage(clients.SixMonth)
-	generateCollage(clients.Year)
+	generateCollage(clients.Month, 5)
+	generateCollage(clients.ThreeMonth, 6)
+	generateCollage(clients.SixMonth, 7)
+	generateCollage(clients.Year, 10)
 }
