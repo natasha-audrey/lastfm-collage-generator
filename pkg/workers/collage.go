@@ -89,6 +89,13 @@ func writeText(fg *image.Uniform, label string,
 	}
 }
 
+func drawGradient(dst *image.RGBA) {
+	fp, _ := os.Open("./static/black-gradient.png")
+	fp.Seek(0, 0)
+	img, _ := png.Decode(fp)
+	draw.Draw(dst, dst.Bounds(), img, image.Point{}, draw.Over)
+}
+
 // AddText adds text at given x and y position with a given label
 // Spaghetti code :-)
 func addText(fileName string, x, y int, labels []string,
@@ -137,13 +144,15 @@ func addText(fileName string, x, y int, labels []string,
 	// Initialize the context.
 	fg := image.Black
 	// rgba := body == nil ? image.NewRGBA(image.Rect(0, 0, 300, 300))  : image.NewRGBA(image.Rect(0, 0, bg.Bounds().Dx(), bg.Bounds().Dy()))
-	var rgba draw.Image
+	var rgba *image.RGBA
 	if body == nil {
 		rgba = image.NewRGBA(image.Rect(0, 0, 300, 300))
 	} else {
 		rgba = image.NewRGBA(image.Rect(0, 0, bg.Bounds().Dx(), bg.Bounds().Dy()))
 	}
 	draw.Draw(rgba, rgba.Bounds(), bg, image.Point{}, draw.Src)
+	drawGradient(rgba)
+
 	c := freetype.NewContext()
 	c.SetDPI(dpi)
 	c.SetFont(f)
