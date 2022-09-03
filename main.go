@@ -4,16 +4,18 @@
 package main
 
 import (
+	"log"
 	"natasha-audrey/lastfm-collage-generator/pkg/clients"
+	"natasha-audrey/lastfm-collage-generator/pkg/flags"
 	"natasha-audrey/lastfm-collage-generator/pkg/workers"
 	"net/http"
 	"os"
 	"path/filepath"
 )
 
-func generateCollage(tf clients.TimeFrame, size int) {
+func generateCollage(f *flags.Flags) {
 	client := clients.NewLastFmClientFromHTTP(&http.Client{})
-	res, err := client.GetTopAlbums(tf, "n8yo")
+	res, err := client.GetTopAlbums(f.Time, "n8yo")
 	if err != nil {
 		panic(err)
 	}
@@ -21,15 +23,15 @@ func generateCollage(tf clients.TimeFrame, size int) {
 	if err != nil {
 		panic(err)
 	}
-	pngPath := "./" + tf.String() + ".png"
-	workers.Collage{}.MakeCollage(albums, size, pngPath)
+	workers.Collage{}.MakeCollage(albums, f.Size, f.Path)
 }
 
 func main() {
+	flags, err := flags.Parse()
+	if err != nil {
+		log.Fatal(err)
+	}
 	newpath := filepath.Join(".", "generated")
 	os.MkdirAll(newpath, os.ModePerm)
-	generateCollage(clients.Month, 5)
-	generateCollage(clients.ThreeMonth, 6)
-	generateCollage(clients.SixMonth, 7)
-	generateCollage(clients.Year, 10)
+	generateCollage(flags)
 }

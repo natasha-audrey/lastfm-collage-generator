@@ -3,6 +3,7 @@ package clients
 
 import (
 	"natasha-audrey/lastfm-collage-generator/pkg/config"
+	"natasha-audrey/lastfm-collage-generator/pkg/config/timeframe"
 	"net/http"
 )
 
@@ -18,19 +19,7 @@ func NewLastFmClientFromHTTP(httpClient *http.Client) *LastFmClient {
 	return client
 }
 
-//go:generate stringer -type=TimeFrame -linecomment
-type TimeFrame int
-
-const (
-	Week       TimeFrame = iota // 7day
-	Month                       // 1month
-	ThreeMonth                  // 3month
-	SixMonth                    // 6month
-	Year                        // 12month
-	Overall                     // overall
-)
-
-func (c LastFmClient) GetTopAlbums(tf TimeFrame, user string) (*http.Response, error) {
+func (c LastFmClient) GetTopAlbums(tf timeframe.TimeFrame, user string) (*http.Response, error) {
 	req, err := http.NewRequest("GET", c.config.BaseURL, nil)
 	if err != nil {
 		return nil, err
