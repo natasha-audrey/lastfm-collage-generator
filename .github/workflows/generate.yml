@@ -1,0 +1,41 @@
+name: Generate collages
+on:
+  schedule:
+    - cron: '0 0 1 * *'
+jobs:
+  generate-collage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - name: Build Executable
+        run: |
+          go build
+      - name: Generate collages
+        env:
+          APPLICATION_NAME: ${{ secrets.APPLICATION_NAME }}
+          API_KEY: ${{ secrets.API_KEY }}
+          SHARED_SECRET: ${{ secrets.SHARED_SECRET }}
+          REGISTERED_TO: ${{ secrets.REGISTERED_TO }}
+        run: |
+          export DATE=$(date '+%Y%m%d')
+          mkdir -p ./$DATE
+          ./lastfm-collage-generator -p ./$DATE/month5x5.png -s 5 -t 1month || ./lastfm-collage-generator -p ./$DATE/month5x5.png -s 5 -t 1month
+          ./lastfm-collage-generator -p ./$DATE/three-month5x5.png -s 5 -t 3month || ./lastfm-collage-generator -p ./$DATE/three-month5x5.png -s 5 -t 3month
+          ./lastfm-collage-generator -p ./$DATE/six-month5x5.png -s 5 -t 6month || ./lastfm-collage-generator -p ./$DATE/six-month5x5.png -s 5 -t 6month
+          ./lastfm-collage-generator -p ./$DATE/year-5x5.png -s 5 -t 12month || ./lastfm-collage-generator -p ./$DATE/year-5x5.png -s 5 -t 12month
+          ./lastfm-collage-generator -p ./$DATE/overall.png -s 5 -t overall || ./lastfm-collage-generator -p ./$DATE/overall.png -s 5 -t overall
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: 'ci[create-pull-request]: Generate collages'
+          branch: create-pull-request/collages/
+          delete-brach: true
+          assignees: natasha-audrey
+          body: |
+            🤖 Automated generation of collages.
+
+            Automated changes by [create-pull-request](https://github.com/peter-evans/create-pull-request) GitHub action
+          labels: automated pr
+      - run: echo "🍏 This job's status is ${{ job.status }}."
