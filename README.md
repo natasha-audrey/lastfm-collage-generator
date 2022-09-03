@@ -12,7 +12,7 @@ Table of Contents
 # last-fm-collage-generator
 
 Tool to generate last-fm collages. This is a personal project - not really meant
-to be readable or production ready.
+to be readable or production ready. Note: This only runs from the root of the repository.
 
 ## Environment Variables
 
