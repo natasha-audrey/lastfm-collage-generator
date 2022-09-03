@@ -35,8 +35,6 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: 'ci[create-pull-request]: Generate collages'
-          branch: create-pull-request/collages/
-          delete-brach: true
           assignees: natasha-audrey
           body: |
             🤖 Automated generation of collages.
