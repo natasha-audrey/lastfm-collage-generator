@@ -23,13 +23,12 @@ jobs:
           SHARED_SECRET: ${{ secrets.SHARED_SECRET }}
           REGISTERED_TO: ${{ secrets.REGISTERED_TO }}
         run: |
-          export DATE=$(date '+%Y%m%d')
-          mkdir -p ./collages/$DATE
-          ./lastfm-collage-generator -p ./collages/$DATE/month5x5.png -s 5 -t 1month || ./lastfm-collage-generator -p ./$DATE/month5x5.png -s 5 -t 1month
-          ./lastfm-collage-generator -p ./collages/$DATE/three-month5x5.png -s 5 -t 3month || ./lastfm-collage-generator -p ./$DATE/three-month5x5.png -s 5 -t 3month
-          ./lastfm-collage-generator -p ./collages/$DATE/six-month5x5.png -s 5 -t 6month || ./lastfm-collage-generator -p ./$DATE/six-month5x5.png -s 5 -t 6month
-          ./lastfm-collage-generator -p ./collages/$DATE/year-5x5.png -s 5 -t 12month || ./lastfm-collage-generator -p ./$DATE/year-5x5.png -s 5 -t 12month
-          ./lastfm-collage-generator -p ./collages/$DATE/overall.png -s 5 -t overall || ./lastfm-collage-generator -p ./$DATE/overall.png -s 5 -t overall
+          mkdir -p ./collages
+          ./lastfm-collage-generator -p ./collages/month5x5.png -s 5 -t 1month || ./lastfm-collage-generator -p ./collages/month5x5.png -s 5 -t 1month
+          ./lastfm-collage-generator -p ./collages/three-month5x5.png -s 5 -t 3month || ./lastfm-collage-generator -p ./collages/three-month5x5.png -s 5 -t 3month
+          ./lastfm-collage-generator -p ./collages/six-month5x5.png -s 5 -t 6month || ./lastfm-collage-generator -p ./collages/six-month5x5.png -s 5 -t 6month
+          ./lastfm-collage-generator -p ./collages/year-5x5.png -s 5 -t 12month || ./lastfm-collage-generator -p ./collages/year-5x5.png -s 5 -t 12month
+          ./lastfm-collage-generator -p ./collages/overall.png -s 5 -t overall || ./lastfm-collage-generator -p ./collages/overall.png -s 5 -t overall
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v4
         with:
