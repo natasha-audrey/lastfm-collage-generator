@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"image"
 	"image/draw"
+	"image/gif"
 	"image/jpeg"
 	"image/png"
 	"io"
 	"log"
+	"log/slog"
 	"natasha-audrey/lastfm-collage-generator/pkg/model"
 	"net/http"
 	"os"
@@ -32,32 +34,33 @@ func downloadImages(albums []model.Album, ch chan string) error {
 	for _, album := range albums {
 		if album.Image != "" {
 			// If image exists don't bother making a new one
-			if _, err := os.Stat(album.LocalImage); os.IsNotExist(err) {
+			if _, err := os.Stat(album.LocalImage + ".png"); os.IsNotExist(err) {
+				slog.Info(album.LocalImage + ".png not found: Fetching " + album.Image)
 				response, err := http.Get(album.Image)
 				if err != nil {
 					close(ch)
 					log.Println(err)
 					return err
 				}
+
 				file, err := addText(
-					album.LocalImage,
-					0,
-					0,
+					album,
 					[]string{album.Artist, album.Name},
 					response.Body)
 				response.Body.Close()
 
 				if err != nil {
 					close(ch)
-					log.Println(err)
+					log.Println("An error occurred:", err)
 					return err
 				}
 				ch <- file
 			} else {
+				slog.Info(album.LocalImage + ".png already exists, skipping fetch.")
 				ch <- album.LocalImage
 			}
 		} else {
-			file, err := addText(album.LocalImage, 0, 0, []string{album.Artist, album.Name}, nil)
+			file, err := addText(album, []string{album.Artist, album.Name}, nil)
 			if err != nil {
 				close(ch)
 				return err
@@ -96,12 +99,11 @@ func drawGradient(dst *image.RGBA) {
 	draw.Draw(dst, dst.Bounds(), img, image.Point{}, draw.Over)
 }
 
-// AddText adds text at given x and y position with a given label
-// Spaghetti code :-)
-func addText(fileName string, x, y int, labels []string,
+// TODO(Refactor): Move Decode and Encode into their own files
+func addText(album model.Album, labels []string,
 	body io.ReadCloser) (string, error) {
 
-	outFile, err := os.Create(fileName)
+	outFile, err := os.Create(album.LocalImage + ".png")
 	if err != nil {
 		log.Fatal(err)
 		return "", err
@@ -109,35 +111,42 @@ func addText(fileName string, x, y int, labels []string,
 	if body != nil {
 		_, err = io.Copy(outFile, body)
 		if err != nil {
-			log.Println(fileName, err)
+			log.Println(album.LocalImage+album.Ext, err)
 			return "", nil
 		}
 	}
 
 	outFile.Seek(0, 0)
+	// decode the file
 	var bg image.Image
 	if body != nil {
-		bg, err = jpeg.Decode(outFile)
-		if err != nil {
-			outFile.Seek(0, 0)
-			bg, err = png.Decode(outFile)
-			if err != nil {
-				log.Println(fileName, err)
-				return "", nil
-			}
+		if album.Ext == ".jpg" || album.Ext == ".jpeg" {
+			bg, err = jpeg.Decode(outFile)
 		}
-	} else {
+		if album.Ext == ".gif" {
+			bg, err = gif.Decode(outFile)
+		}
+		if album.Ext == ".png" {
+			bg, err = png.Decode(outFile)
+		}
+		if err != nil {
+			bg = nil
+			log.Println(album.LocalImage, err)
+		}
+	}
+	if bg == nil {
 		bg = image.Black
 	}
+
 	// Read the font data.
 	fontBytes, err := os.ReadFile(fontfile)
 	if err != nil {
-		log.Println(fileName, err)
+		log.Println(album.LocalImage+".png", err)
 		return "", nil
 	}
 	f, err := freetype.ParseFont(fontBytes)
 	if err != nil {
-		log.Println(fileName, err)
+		log.Println(album.LocalImage+".png", err)
 		return "", nil
 	}
 
@@ -163,9 +172,9 @@ func addText(fileName string, x, y int, labels []string,
 	c.SetHinting(font.HintingFull)
 
 	// Save that RGBA image to disk.
-	outFile, err = os.Create(fileName)
+	outFile, err = os.Create(album.LocalImage + ".png")
 	if err != nil {
-		log.Println(fileName, err)
+		log.Println(album.LocalImage+".png", err)
 		return "", err
 	}
 
@@ -181,18 +190,18 @@ func addText(fileName string, x, y int, labels []string,
 	b := bufio.NewWriter(outFile)
 	err = png.Encode(b, rgba)
 	if err != nil {
-		log.Println(fileName, err)
+		log.Println(album.LocalImage+".png", err)
 		return "", err
 	}
 	err = b.Flush()
 	if err != nil {
-		log.Println(fileName, err)
+		log.Println(album.LocalImage+".png", err)
 		return "", err
 	}
 	if body != nil {
 		body.Close()
 	}
-	return fileName, nil
+	return album.LocalImage + ".png", nil
 }
 
 // MakeCollage makes a collage of albums given an array of albums
@@ -214,7 +223,7 @@ func (c Collage) MakeCollage(albums []model.Album, size int, name string) (im im
 
 	for i := 0; i < size*size && i < len(albums); i++ {
 		if albums[i].LocalImage != "" {
-			file, err := os.Open(albums[i].LocalImage)
+			file, err := os.Open(albums[i].LocalImage + ".png")
 			if err != nil {
 				log.Println(err)
 				// return nil, err
@@ -228,7 +237,7 @@ func (c Collage) MakeCollage(albums []model.Album, size int, name string) (im im
 				if err != nil {
 					// Some kind of error happened, regenerate the image without an album
 					log.Println("Error getting images", albums[i].LocalImage)
-					addText(albums[i].LocalImage, 0, 0, []string{albums[i].Artist, albums[i].Name}, nil)
+					addText(albums[i], []string{albums[i].Artist, albums[i].Name}, nil)
 					i--
 				}
 			} else {

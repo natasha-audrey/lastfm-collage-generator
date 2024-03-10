@@ -1,7 +1,6 @@
 package config
 
 import (
-	"log"
 	"os"
 )
 
@@ -22,7 +21,6 @@ type LastFmConfig struct {
 	SharedSecret    string
 	RegisteredTo    string
 	BaseURL         string
-	Logger          log.Logger
 }
 
 // Init Initialize the config
@@ -32,5 +30,4 @@ func (c *LastFmConfig) Init() {
 	c.SharedSecret = os.Getenv("SHARED_SECRET")
 	c.RegisteredTo = os.Getenv("REGISTERED_TO")
 	c.BaseURL = getEnv("BASE_URL", "http://ws.audioscrobbler.com/2.0")
-	c.Logger = *log.Default()
 }
