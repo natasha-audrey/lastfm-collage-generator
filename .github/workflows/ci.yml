@@ -1,8 +1,8 @@
-name: Generate collages
+name: CI Checks
 on:
   pull_request:
 jobs:
-  generate-collage:
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository code
