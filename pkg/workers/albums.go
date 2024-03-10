@@ -5,6 +5,7 @@ import (
 	"io"
 	"natasha-audrey/lastfm-collage-generator/pkg/model"
 	"net/http"
+	"path"
 	"regexp"
 )
 
@@ -31,7 +32,12 @@ func (a Albums) Parse(res *http.Response) ([]model.Album, error) {
 		fileReg := regexp.MustCompile(`[^0-9A-Za-z_\-]`)
 		artist := fileReg.ReplaceAllString(album.Artist, "_")
 		name := fileReg.ReplaceAllString(album.Name, "_")
-		album.LocalImage = "./generated/" + artist + "_" + name + ".png"
+		ext := path.Ext(album.Image)
+		if ext == "" {
+			ext = ".png"
+		}
+		album.Ext = ext
+		album.LocalImage = "./generated/" + artist + "_" + name
 
 		albums = append(albums, album)
 	}

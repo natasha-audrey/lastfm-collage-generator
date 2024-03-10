@@ -2,6 +2,7 @@
 package clients
 
 import (
+	"log/slog"
 	"natasha-audrey/lastfm-collage-generator/pkg/config"
 	"natasha-audrey/lastfm-collage-generator/pkg/config/timeframe"
 	"net/http"
@@ -34,7 +35,7 @@ func (c LastFmClient) GetTopAlbums(tf timeframe.TimeFrame, user string) (*http.R
 	q.Add("limit", "100")
 	req.URL.RawQuery = q.Encode()
 
-	c.config.Logger.Println(req.URL)
+	slog.Debug(req.URL.String())
 
 	res, err := c.http.Do(req)
 	if err != nil {

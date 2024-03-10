@@ -7,4 +7,5 @@ type Album struct {
 	Listens    string
 	Image      string
 	LocalImage string
+	Ext        string
 }

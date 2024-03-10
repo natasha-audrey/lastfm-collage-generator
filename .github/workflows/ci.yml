@@ -1,0 +1,17 @@
+name: Generate collages
+on:
+  pull_request:
+jobs:
+  generate-collage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '~1.22.0' # The Go version to download (if necessary) and use.
+      - name: Build Executable
+        run: |
+          go build
+# TODO: Add tests
