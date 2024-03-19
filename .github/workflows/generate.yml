@@ -33,7 +33,7 @@ jobs:
         uses: peter-evans/create-pull-request@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: 'ci[create-pull-request]: Generate collages'
+          commit-message: 'ci(create-pull-request): Generate collages'
           assignees: natasha-audrey
           body: |
             🤖 Automated generation of collages.
