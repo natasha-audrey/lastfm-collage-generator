@@ -14,4 +14,6 @@ jobs:
       - name: Build Executable
         run: |
           go build
-# TODO: Add tests
+      - name: Run Tests
+        run: |
+          go test ./...
