@@ -10,6 +10,7 @@ type Flags struct {
 	Time timeframe.TimeFrame
 	Size int
 	Path string
+	User string
 }
 
 // Parse parses command line flags.
@@ -17,6 +18,7 @@ func Parse() (*Flags, error) {
 	t := timeOption.Option()
 	s := sizeOption.Option()
 	p := pathOption.Option()
+	u := userOption.Option()
 	flag.Parse()
 
 	var errors error = nil
@@ -36,6 +38,11 @@ func Parse() (*Flags, error) {
 		errors = fmt.Errorf("%w", err)
 	}
 
+	user, err := userOption.Parse(*u)
+	if err != nil {
+		errors = fmt.Errorf("%w", err)
+	}
+
 	if errors != nil {
 		flag.Usage()
 	}
@@ -44,5 +51,6 @@ func Parse() (*Flags, error) {
 		time,
 		size,
 		path,
+		user,
 	}, errors
 }
