@@ -37,6 +37,8 @@ Usage of ./lastfm-collage-generator:
     
         Available options:
           7day 1month 3month 6month 12month overall (default "7day")
+  -u string
+        The user to query (default "tashayasha")
 ```
 
 

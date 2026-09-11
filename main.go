@@ -15,7 +15,7 @@ import (
 
 func generateCollage(f *flags.Flags) {
 	client := clients.NewLastFmClientFromHTTP(&http.Client{})
-	res, err := client.GetTopAlbums(f.Time, "n8yo")
+	res, err := client.GetTopAlbums(f.Time, f.User)
 	if err != nil {
 		panic(err)
 	}
