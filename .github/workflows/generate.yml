@@ -30,7 +30,7 @@ jobs:
           ./lastfm-collage-generator -p ./collages/year-5x5.png -s 5 -t 12month || ./lastfm-collage-generator -p ./collages/year-5x5.png -s 5 -t 12month
           ./lastfm-collage-generator -p ./collages/overall.png -s 5 -t overall || ./lastfm-collage-generator -p ./collages/overall.png -s 5 -t overall
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v4
+        uses: peter-evans/create-pull-request@v8
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: 'ci(create-pull-request): Generate collages'
