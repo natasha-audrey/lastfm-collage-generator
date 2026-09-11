@@ -11,7 +11,7 @@ Table of Contents
 
 </details>
 
-# last-fm-collage-generator
+# last-fm-collage-generator test
 
 Tool to generate last-fm collages. This is a personal project - not really meant
 to be readable or production ready. Note: This only runs from the root of the repository.
