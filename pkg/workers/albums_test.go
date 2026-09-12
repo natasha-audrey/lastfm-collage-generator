@@ -9,7 +9,7 @@ import (
 func TestAlbumsParse_err(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{`))
+		w.Write([]byte(`{}`))
 	}))
 	t.Cleanup(server.Close)
 
@@ -22,11 +22,10 @@ func TestAlbumsParse_err(t *testing.T) {
 		t.Fatal("Error talking to server")
 	}
 
-	albums, err := Albums{}.Parse(response)
-	if albums != nil && err != nil {
-		t.Fatal("Albums and error should be nil")
+	_, err = Albums{}.Parse(response)
+	if err != nil {
+		t.Fatal("Expected error not thrown")
 	}
-
 }
 
 func TestAlbumsParse_success(t *testing.T) {

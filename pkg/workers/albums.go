@@ -15,12 +15,15 @@ type Albums struct{}
 func (a Albums) Parse(res *http.Response) ([]model.Album, error) {
 	responseBodyBytes, err := io.ReadAll(res.Body)
 	if err != nil {
-		return nil, nil
+		return nil, err
 	}
 	defer res.Body.Close()
 
 	var result model.LastFMTopAlbums
-	json.Unmarshal(responseBodyBytes, &result)
+	err = json.Unmarshal(responseBodyBytes, &result)
+	if err != nil {
+		return nil, err
+	}
 
 	var albums []model.Album
 	for _, value := range result.TopAlbums["album"] {
