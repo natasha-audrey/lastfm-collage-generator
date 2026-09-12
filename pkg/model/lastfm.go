@@ -1,7 +1,11 @@
 package model
 
 type LastFMTopAlbums struct {
-	TopAlbums map[string][]lastfmAlbum `json:"topalbums"`
+	TopAlbums lastFmAlbums `json:"topalbums"`
+}
+
+type lastFmAlbums struct {
+	Album []lastfmAlbum `json:"album"`
 }
 
 type lastfmAlbum struct {
