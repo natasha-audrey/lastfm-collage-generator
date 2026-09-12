@@ -19,16 +19,16 @@ func (a Albums) Parse(res *http.Response) ([]model.Album, error) {
 	}
 	defer res.Body.Close()
 
-	var result map[string]map[string][]map[string]interface{}
+	var result model.LastFMTopAlbums
 	json.Unmarshal(responseBodyBytes, &result)
 
 	var albums []model.Album
-	for _, value := range result["topalbums"]["album"] {
+	for _, value := range result.TopAlbums["album"] {
 		var album model.Album
-		album.Name = value["name"].(string)
-		album.Listens = value["playcount"].(string)
-		album.Artist = value["artist"].(map[string]interface{})["name"].(string)
-		album.Image = value["image"].([]interface{})[3].(map[string]interface{})["#text"].(string)
+		album.Name = value.Name
+		album.Listens = value.Playcount
+		album.Artist = value.Artist["name"]
+		album.Image = value.Image[len(value.Image)-1]["#text"]
 		fileReg := regexp.MustCompile(`[^0-9A-Za-z_\-]`)
 		artist := fileReg.ReplaceAllString(album.Artist, "_")
 		name := fileReg.ReplaceAllString(album.Name, "_")
