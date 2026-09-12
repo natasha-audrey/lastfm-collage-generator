@@ -17,11 +17,11 @@ func generateCollage(f *flags.Flags) {
 	client := clients.NewLastFmClientFromHTTP(&http.Client{})
 	res, err := client.GetTopAlbums(f.Time, f.User)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	albums, err := workers.Albums{}.Parse(res)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	workers.Collage{}.MakeCollage(albums, f.Size, f.Path)
 }
