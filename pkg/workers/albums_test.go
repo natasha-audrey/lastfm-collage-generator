@@ -78,7 +78,10 @@ func TestAlbumsParse_success(t *testing.T) {
 	}
 
 	albums, err := Albums{}.Parse(response)
+	if err != nil {
+		t.Fatalf("Error unmarshalling: %q", err)
+	}
 	if len(albums) != 2 {
-		t.Fatal("Not expected number of albums")
+		t.Fatalf("len(albums) = %v, want %v", len(albums), 2)
 	}
 }
