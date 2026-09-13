@@ -259,6 +259,78 @@ func TestComposeCollageRejectsInvalidSize(t *testing.T) {
 	}
 }
 
+func TestLoadAlbumImage(t *testing.T) {
+	t.Run("valid PNG", func(t *testing.T) {
+		want := image.NewRGBA(image.Rect(0, 0, 2, 1))
+		want.SetRGBA(0, 0, color.RGBA{R: 255, A: 255})
+		want.SetRGBA(1, 0, color.RGBA{G: 255, A: 255})
+		var data bytes.Buffer
+		if err := png.Encode(&data, want); err != nil {
+			t.Fatal(err)
+		}
+		path := filepath.Join(t.TempDir(), "album")
+		if err := os.WriteFile(path+".png", data.Bytes(), 0600); err != nil {
+			t.Fatal(err)
+		}
+
+		got, err := loadAlbumImage(model.Album{LocalImage: path})
+		if err != nil {
+			t.Fatalf("loadAlbumImage() error = %v", err)
+		}
+		if got == nil {
+			t.Fatal("loadAlbumImage() returned a nil image")
+		}
+		if got.Bounds() != want.Bounds() {
+			t.Fatalf("bounds = %v, want %v", got.Bounds(), want.Bounds())
+		}
+		for x := 0; x < 2; x++ {
+			if pixel := color.RGBAModel.Convert(got.At(x, 0)); pixel != want.RGBAAt(x, 0) {
+				t.Errorf("pixel (%d, 0) = %v, want %v", x, pixel, want.RGBAAt(x, 0))
+			}
+		}
+	})
+
+	t.Run("empty path", func(t *testing.T) {
+		got, err := loadAlbumImage(model.Album{})
+		if err == nil || err.Error() != "album has no local image path" {
+			t.Fatalf("loadAlbumImage() error = %v, want missing local path error", err)
+		}
+		if got != nil {
+			t.Error("loadAlbumImage() returned an image on failure")
+		}
+	})
+
+	t.Run("missing file", func(t *testing.T) {
+		path := filepath.Join(t.TempDir(), "missing")
+		got, err := loadAlbumImage(model.Album{LocalImage: path})
+		if !errors.Is(err, os.ErrNotExist) {
+			t.Fatalf("loadAlbumImage() error = %v, want file not found", err)
+		}
+		var pathErr *os.PathError
+		if !errors.As(err, &pathErr) || pathErr.Path != path+".png" {
+			t.Errorf("loadAlbumImage() error = %v, want path %q", err, path+".png")
+		}
+		if got != nil {
+			t.Error("loadAlbumImage() returned an image on failure")
+		}
+	})
+
+	t.Run("invalid PNG", func(t *testing.T) {
+		path := filepath.Join(t.TempDir(), "invalid")
+		if err := os.WriteFile(path+".png", []byte("not a PNG image"), 0600); err != nil {
+			t.Fatal(err)
+		}
+		got, err := loadAlbumImage(model.Album{LocalImage: path})
+		var formatErr png.FormatError
+		if !errors.As(err, &formatErr) {
+			t.Fatalf("loadAlbumImage() error = %v, want PNG format error", err)
+		}
+		if got != nil {
+			t.Error("loadAlbumImage() returned an image on failure")
+		}
+	})
+}
+
 func solidImage(c color.RGBA) image.Image {
 	img := image.NewRGBA(image.Rect(0, 0, 300, 300))
 	for y := 0; y < 300; y++ {
