@@ -13,7 +13,29 @@ import (
 	"testing"
 
 	"natasha-audrey/lastfm-collage-generator/pkg/model"
+
+	"github.com/golang/freetype"
 )
+
+func TestWriteTextReturnsDrawingError(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		label string
+	}{
+		{name: "single line", label: "Album"},
+		{name: "wrapped line", label: "An Album With A Really Really Long Title"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// A context without a font makes DrawString fail before rendering.
+			ctx := freetype.NewContext()
+			err := writeText(image.Black, tc.label, ctx, freetype.Pt(10, 10))
+			const want = "freetype: DrawText called with a nil font"
+			if err == nil || err.Error() != want {
+				t.Fatalf("writeText() error = %v, want %q", err, want)
+			}
+		})
+	}
+}
 
 type collageRoundTripper func(*http.Request) (*http.Response, error)
 
@@ -75,7 +97,13 @@ func TestDownloadImages(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			album := model.Album{Artist: "Artist", Name: "Album", Image: "https://example.test/album.png", LocalImage: path, Ext: ".png"}
+			album := model.Album{
+				Artist:     "Artist",
+				Name:       "Album",
+				Image:      "https://example.test/album.png",
+				LocalImage: path,
+				Ext:        ".png",
+			}
 			if tc.noImage {
 				album.Image = ""
 			}

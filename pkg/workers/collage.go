@@ -73,23 +73,27 @@ func downloadImages(albums []model.Album) error {
 }
 
 func writeText(fg *image.Uniform, label string,
-	c *freetype.Context, pt fixed.Point26_6) {
+	c *freetype.Context, pt fixed.Point26_6) error {
 
 	c.SetSrc(fg)
 	if len(label) > 29 {
 		re := regexp.MustCompile(`.*\s`)
 		lb := re.FindStringSubmatch(label[0:28])
 		if lb[0] != "" {
-			writeText(fg, string(label[0:len(lb[0])]), c, pt)
-			writeText(fg, string(label[len(lb[0]):]), c,
+			err := writeText(fg, string(label[0:len(lb[0])]), c, pt)
+			if err != nil {
+				return err
+			}
+			err = writeText(fg, string(label[len(lb[0]):]), c,
 				fixed.Point26_6{X: pt.X, Y: pt.Y + c.PointToFixed(size)})
-			return
+			if err != nil {
+				return err
+			}
+			return nil
 		}
 	}
 	_, err := c.DrawString(label, pt)
-	if err != nil {
-		log.Println(err)
-	}
+	return err
 }
 
 func drawGradient(dst *image.RGBA) {
@@ -182,8 +186,14 @@ func addText(album model.Album, labels []string,
 	ptBlack := freetype.Pt(10, 10+int(c.PointToFixed(size)>>6))
 	ptWhite := freetype.Pt(11, 11+int(c.PointToFixed(size)>>6))
 	for _, label := range labels {
-		writeText(image.Black, label, c, ptBlack)
-		writeText(image.White, label, c, ptWhite)
+		err = writeText(image.Black, label, c, ptBlack)
+		if err != nil {
+			return "", err
+		}
+		err = writeText(image.White, label, c, ptWhite)
+		if err != nil {
+			return "", err
+		}
 		ptBlack.Y += c.PointToFixed(size * spacing)
 		ptWhite.Y += c.PointToFixed(size * spacing)
 	}
