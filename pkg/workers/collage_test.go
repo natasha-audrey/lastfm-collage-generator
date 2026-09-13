@@ -99,7 +99,7 @@ func TestDownloadImages(t *testing.T) {
 			}
 			album := model.Album{
 				Artist:     "Artist",
-				Name:       "Album",
+				Name:       "An Album With A Really Really Long Title",
 				Image:      "https://example.test/album.png",
 				LocalImage: path,
 				Ext:        ".png",

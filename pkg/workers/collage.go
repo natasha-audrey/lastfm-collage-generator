@@ -114,8 +114,7 @@ func addText(album model.Album, labels []string,
 	if body != nil {
 		_, err = io.Copy(outFile, body)
 		if err != nil {
-			log.Println(album.LocalImage+album.Ext, err)
-			return "", nil
+			return "", err
 		}
 	}
 
@@ -134,7 +133,7 @@ func addText(album model.Album, labels []string,
 		}
 		if err != nil {
 			bg = nil
-			log.Println(album.LocalImage, err)
+			log.Println("Ran into problem decoding, using a black background image", album.LocalImage, err)
 		}
 	}
 	if bg == nil {
@@ -200,12 +199,10 @@ func addText(album model.Album, labels []string,
 	b := bufio.NewWriter(outFile)
 	err = png.Encode(b, rgba)
 	if err != nil {
-		log.Println(album.LocalImage+".png", err)
 		return "", err
 	}
 	err = b.Flush()
 	if err != nil {
-		log.Println(album.LocalImage+".png", err)
 		return "", err
 	}
 	return album.LocalImage + ".png", nil
