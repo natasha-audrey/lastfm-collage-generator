@@ -2,6 +2,7 @@
 package clients
 
 import (
+	"errors"
 	"log/slog"
 	"natasha-audrey/lastfm-collage-generator/pkg/config"
 	"natasha-audrey/lastfm-collage-generator/pkg/config/timeframe"
@@ -21,6 +22,9 @@ func NewLastFmClientFromHTTP(httpClient *http.Client) *LastFmClient {
 }
 
 func (c LastFmClient) GetTopAlbums(tf timeframe.TimeFrame, user string) (*http.Response, error) {
+	if user == "" {
+		return nil, errors.New("User cannot be blank")
+	}
 	req, err := http.NewRequest("GET", c.config.BaseURL, nil)
 	if err != nil {
 		return nil, err
