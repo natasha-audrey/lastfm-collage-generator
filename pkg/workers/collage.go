@@ -2,7 +2,7 @@ package workers
 
 import (
 	"bufio"
-	"fmt"
+	"errors"
 	"image"
 	"image/draw"
 	"image/gif"
@@ -28,9 +28,15 @@ var (
 	spacing  = 1.2
 )
 
-type Collage struct{}
+// Collage creates an album collage. The optional functions make the I/O at the
+// edges replaceable; a zero-value Collage uses the filesystem and HTTP.
+type Collage struct {
+	Prepare func([]model.Album) error
+	Load    func(model.Album) (image.Image, error)
+	Save    func(string, image.Image) error
+}
 
-func downloadImages(albums []model.Album, ch chan string) error {
+func downloadImages(albums []model.Album) error {
 	for _, album := range albums {
 		if album.Image != "" {
 			// If image exists don't bother making a new one
@@ -38,37 +44,31 @@ func downloadImages(albums []model.Album, ch chan string) error {
 				slog.Info(album.LocalImage + ".png not found: Fetching " + album.Image)
 				response, err := http.Get(album.Image)
 				if err != nil {
-					close(ch)
-					log.Println(err)
 					return err
 				}
 
-				file, err := addText(
+				_, err = addText(
 					album,
 					[]string{album.Artist, album.Name},
 					response.Body)
-				response.Body.Close()
+				closeErr := response.Body.Close()
 
 				if err != nil {
-					close(ch)
-					log.Println("An error occurred:", err)
 					return err
 				}
-				ch <- file
+				if closeErr != nil {
+					return closeErr
+				}
 			} else {
 				slog.Info(album.LocalImage + ".png already exists, skipping fetch.")
-				ch <- album.LocalImage
 			}
 		} else {
-			file, err := addText(album, []string{album.Artist, album.Name}, nil)
+			_, err := addText(album, []string{album.Artist, album.Name}, nil)
 			if err != nil {
-				close(ch)
 				return err
 			}
-			ch <- file
 		}
 	}
-	close(ch)
 	return nil
 }
 
@@ -99,15 +99,14 @@ func drawGradient(dst *image.RGBA) {
 	draw.Draw(dst, dst.Bounds(), img, image.Point{}, draw.Over)
 }
 
-// TODO(Refactor): Move Decode and Encode into their own files
 func addText(album model.Album, labels []string,
 	body io.ReadCloser) (string, error) {
 
 	outFile, err := os.Create(album.LocalImage + ".png")
 	if err != nil {
-		log.Fatal(err)
 		return "", err
 	}
+	defer func() { _ = outFile.Close() }()
 	if body != nil {
 		_, err = io.Copy(outFile, body)
 		if err != nil {
@@ -152,7 +151,6 @@ func addText(album model.Album, labels []string,
 
 	// Initialize the context.
 	fg := image.Black
-	// rgba := body == nil ? image.NewRGBA(image.Rect(0, 0, 300, 300))  : image.NewRGBA(image.Rect(0, 0, bg.Bounds().Dx(), bg.Bounds().Dy()))
 	var rgba *image.RGBA
 	if body == nil {
 		rgba = image.NewRGBA(image.Rect(0, 0, 300, 300))
@@ -172,6 +170,9 @@ func addText(album model.Album, labels []string,
 	c.SetHinting(font.HintingFull)
 
 	// Save that RGBA image to disk.
+	if err := outFile.Close(); err != nil {
+		return "", err
+	}
 	outFile, err = os.Create(album.LocalImage + ".png")
 	if err != nil {
 		log.Println(album.LocalImage+".png", err)
@@ -186,7 +187,6 @@ func addText(album model.Album, labels []string,
 		ptBlack.Y += c.PointToFixed(size * spacing)
 		ptWhite.Y += c.PointToFixed(size * spacing)
 	}
-	defer outFile.Close()
 	b := bufio.NewWriter(outFile)
 	err = png.Encode(b, rgba)
 	if err != nil {
@@ -198,65 +198,82 @@ func addText(album model.Album, labels []string,
 		log.Println(album.LocalImage+".png", err)
 		return "", err
 	}
-	if body != nil {
-		body.Close()
-	}
 	return album.LocalImage + ".png", nil
 }
 
-// MakeCollage makes a collage of albums given an array of albums
-func (c Collage) MakeCollage(albums []model.Album, size int, name string) (im image.Image, err error) {
-	ch := make(chan string)
-	go downloadImages(albums, ch)
-	for v := range ch {
-		if v == "" {
-			a := fmt.Sprintf("Error generating %s\n", v)
-			panic(a)
-		}
+func loadAlbumImage(album model.Album) (image.Image, error) {
+	if album.LocalImage == "" {
+		return nil, errors.New("album has no local image path")
 	}
 
-	bg := image.Black
-	imageToReturn := image.NewRGBA(image.Rect(0, 0, 300*size, 300*size))
-	draw.Draw(imageToReturn, imageToReturn.Bounds(), bg, image.Point{}, draw.Src)
-	xPos := 0
-	yPos := 0
+	file, err := os.Open(album.LocalImage + ".png")
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	img, err := png.Decode(file)
+	if err != nil {
+		return nil, err
+	}
+	return img, nil
+}
+
+func saveCollage(name string, img image.Image) error {
+	file, err := os.Create(name)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	return png.Encode(file, img)
+}
+
+func composeCollage(albums []model.Album, size int, load func(model.Album) (image.Image, error)) (image.Image, error) {
+	if size <= 0 {
+		return nil, errors.New("collage size must be positive")
+	}
+
+	result := image.NewRGBA(image.Rect(0, 0, 300*size, 300*size))
+	draw.Draw(result, result.Bounds(), image.Black, image.Point{}, draw.Src)
 
 	for i := 0; i < size*size && i < len(albums); i++ {
-		if albums[i].LocalImage != "" {
-			file, err := os.Open(albums[i].LocalImage + ".png")
-			if err != nil {
-				log.Println(err)
-				// return nil, err
-			}
-
-			file.Seek(0, 0)
-			tempImage, err := png.Decode(file)
-			if err != nil {
-				fmt.Println(err)
-				_, err = jpeg.Decode(file)
-				if err != nil {
-					// Some kind of error happened, regenerate the image without an album
-					log.Println("Error getting images", albums[i].LocalImage)
-					addText(albums[i], []string{albums[i].Artist, albums[i].Name}, nil)
-					i--
-				}
-			} else {
-				tempPoint := image.Point{xPos, yPos}
-				tempRect := image.Rectangle{tempPoint, tempPoint.Add(tempImage.Bounds().Size())}
-				draw.Draw(imageToReturn, tempRect, tempImage, image.Point{}, draw.Src)
-				xPos += tempImage.Bounds().Dx()
-				if (i+1)%size == 0 {
-					xPos = 0
-					yPos += tempImage.Bounds().Dy()
-				}
-			}
+		albumImage, err := load(albums[i])
+		if err != nil {
+			return nil, err
 		}
+
+		position := image.Point{X: (i % size) * 300, Y: (i / size) * 300}
+		rectangle := image.Rectangle{Min: position, Max: position.Add(albumImage.Bounds().Size())}
+		draw.Draw(result, rectangle, albumImage, albumImage.Bounds().Min, draw.Src)
 	}
-	f, err := os.Create(name)
+
+	return result, nil
+}
+
+// MakeCollage makes a collage of albums given an array of albums
+func (c Collage) MakeCollage(albums []model.Album, size int, name string) (image.Image, error) {
+	prepare := c.Prepare
+	if prepare == nil {
+		prepare = downloadImages
+	}
+	load := c.Load
+	if load == nil {
+		load = loadAlbumImage
+	}
+	save := c.Save
+	if save == nil {
+		save = saveCollage
+	}
+
+	if err := prepare(albums); err != nil {
+		return nil, err
+	}
+	result, err := composeCollage(albums, size, load)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	defer f.Close()
-	png.Encode(f, imageToReturn)
-	return imageToReturn, nil
+	if err := save(name, result); err != nil {
+		return nil, err
+	}
+	return result, nil
 }
