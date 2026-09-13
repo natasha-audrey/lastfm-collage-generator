@@ -119,3 +119,30 @@ func TestGetTopAlbums_ReturnsErrorWhenRequestCannotBeCreated(t *testing.T) {
 		t.Errorf("GetTopAlbums() response = %v, want nil", res)
 	}
 }
+
+func TestGetTopAlbums_ErrorsOnEmptyUser(t *testing.T) {
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = io.WriteString(w, `{"topalbums":{"album":[]}}`)
+	}))
+	t.Cleanup(server.Close)
+
+	t.Setenv("API_KEY", "secret-key")
+	t.Setenv("BASE_URL", server.URL)
+
+	client := NewLastFmClientFromHTTP(server.Client())
+	res, err := client.GetTopAlbums(timeframe.Month, "")
+	if err == nil {
+		if res != nil {
+			_ = res.Body.Close()
+		}
+		t.Fatal("GetTopAlbums() error = nil")
+	}
+	if err.Error() != "User cannot be blank" {
+		t.Fatalf("Error = \"%v\", wanted \"User cannot be blank\"", err)
+	}
+	if res != nil {
+		t.Errorf("GetTopAlbums() response = %v, want nil", res)
+	}
+}
