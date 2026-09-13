@@ -9,7 +9,6 @@ import (
 	"image/jpeg"
 	"image/png"
 	"io"
-	"log"
 	"log/slog"
 	"natasha-audrey/lastfm-collage-generator/pkg/model"
 	"net/http"
@@ -133,7 +132,7 @@ func addText(album model.Album, labels []string,
 		}
 		if err != nil {
 			bg = nil
-			log.Println("Ran into problem decoding, using a black background image", album.LocalImage, err)
+			slog.Info("Ran into problem decoding, using a black background image", album.LocalImage, err)
 		}
 	}
 	if bg == nil {
@@ -176,7 +175,6 @@ func addText(album model.Album, labels []string,
 	}
 	outFile, err = os.Create(album.LocalImage + ".png")
 	if err != nil {
-		log.Println(album.LocalImage+".png", err)
 		return "", err
 	}
 
