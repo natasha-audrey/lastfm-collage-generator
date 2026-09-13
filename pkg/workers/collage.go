@@ -143,13 +143,11 @@ func addText(album model.Album, labels []string,
 	// Read the font data.
 	fontBytes, err := os.ReadFile(fontfile)
 	if err != nil {
-		log.Println(album.LocalImage+".png", err)
-		return "", nil
+		return "", err
 	}
 	f, err := freetype.ParseFont(fontBytes)
 	if err != nil {
-		log.Println(album.LocalImage+".png", err)
-		return "", nil
+		return "", err
 	}
 
 	// Initialize the context.

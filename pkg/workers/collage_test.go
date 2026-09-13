@@ -331,6 +331,57 @@ func TestLoadAlbumImage(t *testing.T) {
 	})
 }
 
+func TestSaveCollage(t *testing.T) {
+	t.Run("valid PNG", func(t *testing.T) {
+		want := image.NewRGBA(image.Rect(0, 0, 2, 1))
+		want.SetRGBA(0, 0, color.RGBA{R: 255, A: 255})
+		want.SetRGBA(1, 0, color.RGBA{G: 255, A: 255})
+		path := filepath.Join(t.TempDir(), "collage.png")
+
+		if err := saveCollage(path, want); err != nil {
+			t.Fatalf("saveCollage() error = %v", err)
+		}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		got, err := png.Decode(bytes.NewReader(data))
+		if err != nil {
+			t.Fatalf("decode saved collage: %v", err)
+		}
+		if got.Bounds() != want.Bounds() {
+			t.Fatalf("bounds = %v, want %v", got.Bounds(), want.Bounds())
+		}
+		for x := 0; x < 2; x++ {
+			if pixel := color.RGBAModel.Convert(got.At(x, 0)); pixel != want.RGBAAt(x, 0) {
+				t.Errorf("pixel (%d, 0) = %v, want %v", x, pixel, want.RGBAAt(x, 0))
+			}
+		}
+	})
+
+	t.Run("file creation error", func(t *testing.T) {
+		path := filepath.Join(t.TempDir(), "missing", "collage.png")
+		err := saveCollage(path, image.NewRGBA(image.Rect(0, 0, 1, 1)))
+		if !errors.Is(err, os.ErrNotExist) {
+			t.Fatalf("saveCollage() error = %v, want file not found", err)
+		}
+		var pathErr *os.PathError
+		if !errors.As(err, &pathErr) || pathErr.Path != path {
+			t.Errorf("saveCollage() error = %v, want path %q", err, path)
+		}
+	})
+
+	t.Run("PNG encoding error", func(t *testing.T) {
+		path := filepath.Join(t.TempDir(), "collage.png")
+		// PNG cannot represent an image with zero width or height.
+		err := saveCollage(path, image.NewRGBA(image.Rectangle{}))
+		var formatErr png.FormatError
+		if !errors.As(err, &formatErr) {
+			t.Fatalf("saveCollage() error = %v, want PNG format error", err)
+		}
+	})
+}
+
 func solidImage(c color.RGBA) image.Image {
 	img := image.NewRGBA(image.Rect(0, 0, 300, 300))
 	for y := 0; y < 300; y++ {
