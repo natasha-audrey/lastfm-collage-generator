@@ -28,7 +28,6 @@ Available options:
 	},
 
 	func(str string) (timeframe.TimeFrame, error) {
-		t, err := timeframe.ParseString(str)
-		return t, err
+		return timeframe.ParseString(str)
 	},
 }

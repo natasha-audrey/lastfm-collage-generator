@@ -38,10 +38,7 @@ func Parse() (*Flags, error) {
 		errors = fmt.Errorf("%w", err)
 	}
 
-	user, err := userOption.Parse(*u)
-	if err != nil {
-		errors = fmt.Errorf("%w", err)
-	}
+	user, _ := userOption.Parse(*u)
 
 	if errors != nil {
 		flag.Usage()
