@@ -3,7 +3,6 @@ package workers
 import (
 	"encoding/json"
 	"io"
-	"log"
 	"natasha-audrey/lastfm-collage-generator/pkg/model"
 	"net/http"
 	"path"
@@ -27,7 +26,6 @@ func (a Albums) Parse(res *http.Response) ([]model.Album, error) {
 	}
 
 	var albums []model.Album
-	log.Println(result)
 	for _, value := range result.TopAlbums.Album {
 		var album model.Album
 		album.Name = value.Name
