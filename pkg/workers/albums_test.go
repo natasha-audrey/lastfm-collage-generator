@@ -1,15 +1,33 @@
 package workers
 
 import (
+	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"testing/iotest"
 )
 
-func TestAlbumsParse_err(t *testing.T) {
+func TestAlbumsParse_ReadError(t *testing.T) {
+	wantErr := errors.New("response body read failed")
+	body := io.NopCloser(iotest.ErrReader(wantErr))
+	t.Cleanup(func() { body.Close() })
+	response := &http.Response{Body: body}
+
+	albums, err := (Albums{}).Parse(response)
+	if !errors.Is(err, wantErr) {
+		t.Fatalf("Parse() error = %v, want %v", err, wantErr)
+	}
+	if albums != nil {
+		t.Fatalf("Parse() albums = %v, want nil", albums)
+	}
+}
+
+func TestAlbumsParse_JSONUnmarshallErr(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{}`))
+		w.Write([]byte(`{`))
 	}))
 	t.Cleanup(server.Close)
 
@@ -23,12 +41,12 @@ func TestAlbumsParse_err(t *testing.T) {
 	}
 
 	_, err = Albums{}.Parse(response)
-	if err != nil {
+	if err == nil {
 		t.Fatal("Expected error not thrown")
 	}
 }
 
-func TestAlbumsParse_success(t *testing.T) {
+func TestAlbumsParse_Success(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`
