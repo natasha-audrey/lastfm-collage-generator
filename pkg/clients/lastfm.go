@@ -21,9 +21,20 @@ func NewLastFmClientFromHTTP(httpClient *http.Client) *LastFmClient {
 	return client
 }
 
-func (c LastFmClient) GetTopAlbums(tf timeframe.TimeFrame, user string) (*http.Response, error) {
+func validateTopAlbumsInput(c LastFmClient, user string) error {
 	if user == "" {
-		return nil, errors.New("User cannot be blank")
+		return errors.New("User cannot be blank")
+	}
+	if c.config.APIKey == "" {
+		return errors.New("Missing API Key")
+	}
+	return nil
+}
+
+func (c LastFmClient) GetTopAlbums(tf timeframe.TimeFrame, user string) (*http.Response, error) {
+	err := validateTopAlbumsInput(c, user)
+	if err != nil {
+		return nil, err
 	}
 	req, err := http.NewRequest("GET", c.config.BaseURL, nil)
 	if err != nil {
