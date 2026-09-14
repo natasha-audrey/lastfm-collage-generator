@@ -2,6 +2,8 @@ package model
 
 type LastFMTopAlbums struct {
 	TopAlbums lastFmAlbums `json:"topalbums"`
+	Error     int          `json:"error"`
+	Message   string       `json:"message"`
 }
 
 type lastFmAlbums struct {

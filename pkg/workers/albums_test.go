@@ -5,9 +5,25 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"testing/iotest"
 )
+
+func TestAlbumsParse_LastFMError(t *testing.T) {
+	response := &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       io.NopCloser(strings.NewReader(`{"error": 10, "message": "Invalid API Key"}`)),
+	}
+
+	albums, err := (Albums{}).Parse(response)
+	if err == nil || err.Error() != "Invalid API Key" {
+		t.Fatalf("Parse() error = %v, want Invalid API Key", err)
+	}
+	if albums != nil {
+		t.Fatalf("Parse() albums = %v, want nil", albums)
+	}
+}
 
 func TestAlbumsParse_ReadError(t *testing.T) {
 	wantErr := errors.New("response body read failed")
