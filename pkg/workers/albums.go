@@ -2,6 +2,7 @@ package workers
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"natasha-audrey/lastfm-collage-generator/pkg/model"
 	"net/http"
@@ -23,6 +24,9 @@ func (a Albums) Parse(res *http.Response) ([]model.Album, error) {
 	err = json.Unmarshal(responseBodyBytes, &result)
 	if err != nil {
 		return nil, err
+	}
+	if result.Error != 0 {
+		return nil, errors.New(result.Message)
 	}
 
 	var albums []model.Album
