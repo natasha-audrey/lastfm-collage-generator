@@ -24,11 +24,11 @@ jobs:
           REGISTERED_TO: ${{ secrets.REGISTERED_TO }}
         run: |
           mkdir -p ./collages
-          ./lastfm-collage-generator -p ./collages/month5x5.png -s 5 -t 1month || ./lastfm-collage-generator -p ./collages/month5x5.png -s 5 -t 1month
-          ./lastfm-collage-generator -p ./collages/three-month5x5.png -s 5 -t 3month || ./lastfm-collage-generator -p ./collages/three-month5x5.png -s 5 -t 3month
-          ./lastfm-collage-generator -p ./collages/six-month5x5.png -s 5 -t 6month || ./lastfm-collage-generator -p ./collages/six-month5x5.png -s 5 -t 6month
-          ./lastfm-collage-generator -p ./collages/year-5x5.png -s 5 -t 12month || ./lastfm-collage-generator -p ./collages/year-5x5.png -s 5 -t 12month
-          ./lastfm-collage-generator -p ./collages/overall.png -s 5 -t overall || ./lastfm-collage-generator -p ./collages/overall.png -s 5 -t overall
+          ./lastfm-collage-generator -p ./collages/month5x5.png -s 5 -t 1month
+          ./lastfm-collage-generator -p ./collages/three-month5x5.png -s 5 -t 3month
+          ./lastfm-collage-generator -p ./collages/six-month5x5.png -s 5 -t 6month
+          ./lastfm-collage-generator -p ./collages/year-5x5.png -s 5 -t 12month
+          ./lastfm-collage-generator -p ./collages/overall.png -s 5 -t overall
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v8
         with:
