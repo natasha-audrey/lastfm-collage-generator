@@ -3,4 +3,4 @@
 ## Repository expectations
 
 - Run `go test ./...` before making commits and pushing
-- Use conventional commits for commits
+- Use conventional commits for commits and PR titles
