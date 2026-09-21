@@ -5,8 +5,7 @@ import (
 	"errors"
 	"image"
 	"image/draw"
-	"image/gif"
-	"image/jpeg"
+
 	"image/png"
 	"io"
 	"log/slog"
@@ -88,15 +87,8 @@ func addText(album model.Album, labels []string,
 	// decode the file
 	var bg image.Image
 	if body != nil {
-		if album.Ext == ".jpg" || album.Ext == ".jpeg" {
-			bg, err = jpeg.Decode(outFile)
-		}
-		if album.Ext == ".gif" {
-			bg, err = gif.Decode(outFile)
-		}
-		if album.Ext == ".png" {
-			bg, err = png.Decode(outFile)
-		}
+		albumImage, _, err := image.Decode(outFile)
+		bg = albumImage
 		if err != nil {
 			bg = nil
 			slog.Info("Ran into problem decoding, using a black background image", album.LocalImage, err)
