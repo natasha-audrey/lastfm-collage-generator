@@ -63,6 +63,9 @@ func (f *labelFonts) ResolveFace(r rune) *font.Face {
 	case language.Thai:
 		preferred = 6
 	}
+	// Prefer Noto Emoji (fontFiles index 7) for these broad symbol/emoji ranges.
+	// They also include non-emoji characters; the glyph check below falls back
+	// to the other fonts when Noto Emoji does not cover the rune.
 	if r >= 0x1f000 || (r >= 0x2600 && r <= 0x27bf) {
 		preferred = 7
 	}
