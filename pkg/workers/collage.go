@@ -138,8 +138,12 @@ func addText(album model.Album, labels []string,
 			slog.Info("Ran into problem decoding, using a black background image", album.LocalImage, err)
 		}
 	}
+	// Uniform black has effectively infinite bounds, so size the fallback explicitly.
+	bounds := image.Rect(0, 0, 300, 300)
 	if bg == nil {
 		bg = image.Black
+	} else {
+		bounds = image.Rect(0, 0, bg.Bounds().Dx(), bg.Bounds().Dy())
 	}
 
 	// Read the font data.
@@ -154,12 +158,7 @@ func addText(album model.Album, labels []string,
 
 	// Initialize the context.
 	fg := image.Black
-	var rgba *image.RGBA
-	if body == nil {
-		rgba = image.NewRGBA(image.Rect(0, 0, 300, 300))
-	} else {
-		rgba = image.NewRGBA(image.Rect(0, 0, bg.Bounds().Dx(), bg.Bounds().Dy()))
-	}
+	rgba := image.NewRGBA(bounds)
 	draw.Draw(rgba, rgba.Bounds(), bg, image.Point{}, draw.Src)
 	drawGradient(rgba)
 

@@ -68,18 +68,24 @@ func TestDownloadImages(t *testing.T) {
 	getErr := errors.New("download failed")
 	closeErr := errors.New("close failed")
 	for _, tc := range []struct {
-		name     string
-		empty    bool
-		cached   bool
-		noImage  bool
-		badPath  bool
-		getErr   error
-		closeErr error
+		name       string
+		empty      bool
+		cached     bool
+		noImage    bool
+		badPath    bool
+		getErr     error
+		closeErr   error
+		invalidExt string
 	}{
 		{name: "empty input", empty: true},
 		{name: "download and render"},
 		{name: "cached image", cached: true},
 		{name: "placeholder", noImage: true},
+		{name: "invalid JPEG", invalidExt: ".jpg"},
+		{name: "invalid JPEG alternate extension", invalidExt: ".jpeg"},
+		{name: "invalid GIF", invalidExt: ".gif"},
+		{name: "invalid PNG", invalidExt: ".png"},
+		{name: "unsupported format", invalidExt: ".webp"},
 		{name: "HTTP error", getErr: getErr},
 		{name: "render error", badPath: true},
 		{name: "placeholder error", noImage: true, badPath: true},
@@ -107,7 +113,12 @@ func TestDownloadImages(t *testing.T) {
 			if tc.noImage {
 				album.Image = ""
 			}
-			body := &collageResponseBody{Reader: bytes.NewReader(encoded.Bytes()), err: tc.closeErr}
+			data := encoded.Bytes()
+			if tc.invalidExt != "" {
+				album.Ext = tc.invalidExt
+				data = []byte("truncated artwork")
+			}
+			body := &collageResponseBody{Reader: bytes.NewReader(data), err: tc.closeErr}
 			requests := 0
 			http.DefaultClient = &http.Client{Transport: collageRoundTripper(func(r *http.Request) (*http.Response, error) {
 				requests++
@@ -179,6 +190,9 @@ func TestDownloadImages(t *testing.T) {
 				img, err := png.Decode(bytes.NewReader(data))
 				if err != nil {
 					t.Fatalf("decode album %d: %v", i, err)
+				}
+				if tc.invalidExt != "" && color.RGBAModel.Convert(img.At(299, 299)) != (color.RGBA{A: 255}) {
+					t.Errorf("album %d fallback background is not black", i)
 				}
 				if img.Bounds() != image.Rect(0, 0, 300, 300) {
 					t.Errorf("album %d bounds = %v", i, img.Bounds())
