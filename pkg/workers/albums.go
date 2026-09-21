@@ -1,3 +1,4 @@
+// Package workers parses album responses and renders album collages.
 package workers
 
 import (
@@ -10,9 +11,13 @@ import (
 	"regexp"
 )
 
-// Worker to parse API responses
+// Albums converts Last.fm top-album responses into collage metadata.
 type Albums struct{}
 
+// Parse reads a Last.fm JSON response and assigns sanitized local artwork paths
+// under ./generated. It returns read, JSON, or Last.fm API errors.
+// The response must have a non-nil body and each album must have an image entry.
+// Parse closes the body after a successful read, including when decoding fails.
 func (a Albums) Parse(res *http.Response) ([]model.Album, error) {
 	responseBodyBytes, err := io.ReadAll(res.Body)
 	if err != nil {

@@ -1,11 +1,11 @@
+// Package config loads Last.fm configuration from environment variables.
 package config
 
 import (
 	"os"
 )
 
-// Utility function to get an environment variable, and if not set
-// use a default value
+// getEnv returns the environment variable value, or fallback if it is unset.
 func getEnv(key, fallback string) string {
 	if value, ok := os.LookupEnv(key); ok {
 		return value
@@ -13,8 +13,7 @@ func getEnv(key, fallback string) string {
 	return fallback
 }
 
-// LastFmConfig Struct of the configuration variables
-// Initialized in its own file.
+// LastFmConfig holds application credentials and the Last.fm API endpoint.
 type LastFmConfig struct {
 	ApplicationName string
 	APIKey          string
@@ -23,7 +22,9 @@ type LastFmConfig struct {
 	BaseURL         string
 }
 
-// Init Initialize the config
+// Init loads APPLICATION_NAME, API_KEY, SHARED_SECRET, REGISTERED_TO, and
+// BASE_URL from the environment. An unset BASE_URL defaults to
+// http://ws.audioscrobbler.com/2.0; an explicitly empty value is preserved.
 func (c *LastFmConfig) Init() {
 	c.ApplicationName = os.Getenv("APPLICATION_NAME")
 	c.APIKey = os.Getenv("API_KEY")

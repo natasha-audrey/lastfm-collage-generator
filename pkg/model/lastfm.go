@@ -1,9 +1,12 @@
 package model
 
+// LastFMTopAlbums represents a Last.fm user.gettopalbums JSON response.
 type LastFMTopAlbums struct {
 	TopAlbums lastFmAlbums `json:"topalbums"`
-	Error     int          `json:"error"`
-	Message   string       `json:"message"`
+	// Error is the API error code; zero indicates no reported API error.
+	Error int `json:"error"`
+	// Message describes an API error.
+	Message string `json:"message"`
 }
 
 type lastFmAlbums struct {
