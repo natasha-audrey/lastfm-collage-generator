@@ -21,8 +21,9 @@ const _TimeFrame_name = "7day1month3month6month12monthoverall"
 var _TimeFrame_index = [...]uint8{0, 4, 10, 16, 22, 29, 36}
 
 func (i TimeFrame) String() string {
-	if i < 0 || i >= TimeFrame(len(_TimeFrame_index)-1) {
+	idx := int(i) - 0
+	if i < 0 || idx >= len(_TimeFrame_index)-1 {
 		return "TimeFrame(" + strconv.FormatInt(int64(i), 10) + ")"
 	}
-	return _TimeFrame_name[_TimeFrame_index[i]:_TimeFrame_index[i+1]]
+	return _TimeFrame_name[_TimeFrame_index[idx]:_TimeFrame_index[idx+1]]
 }
