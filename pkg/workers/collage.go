@@ -13,18 +13,6 @@ import (
 	"natasha-audrey/lastfm-collage-generator/pkg/model"
 	"net/http"
 	"os"
-	"regexp"
-
-	"github.com/golang/freetype"
-	"golang.org/x/image/font"
-	"golang.org/x/image/math/fixed"
-)
-
-var (
-	dpi      = 72.0
-	fontfile = "./static/IBMPlexMono-Text.ttf"
-	size     = 16.0
-	spacing  = 1.2
 )
 
 // Collage creates an album collage. The optional functions make the I/O at the
@@ -72,30 +60,6 @@ func downloadImages(albums []model.Album) error {
 		}
 	}
 	return nil
-}
-
-func writeText(fg *image.Uniform, label string,
-	c *freetype.Context, pt fixed.Point26_6) error {
-
-	c.SetSrc(fg)
-	if len(label) > 29 {
-		re := regexp.MustCompile(`.*\s`)
-		lb := re.FindStringSubmatch(label[0:28])
-		if lb[0] != "" {
-			err := writeText(fg, string(label[0:len(lb[0])]), c, pt)
-			if err != nil {
-				return err
-			}
-			err = writeText(fg, string(label[len(lb[0]):]), c,
-				fixed.Point26_6{X: pt.X, Y: pt.Y + c.PointToFixed(size)})
-			if err != nil {
-				return err
-			}
-			return nil
-		}
-	}
-	_, err := c.DrawString(label, pt)
-	return err
 }
 
 func drawGradient(dst *image.RGBA) {
@@ -146,30 +110,12 @@ func addText(album model.Album, labels []string,
 		bounds = image.Rect(0, 0, bg.Bounds().Dx(), bg.Bounds().Dy())
 	}
 
-	// Read the font data.
-	fontBytes, err := os.ReadFile(fontfile)
-	if err != nil {
-		return "", err
-	}
-	f, err := freetype.ParseFont(fontBytes)
-	if err != nil {
-		return "", err
-	}
-
-	// Initialize the context.
-	fg := image.Black
 	rgba := image.NewRGBA(bounds)
 	draw.Draw(rgba, rgba.Bounds(), bg, image.Point{}, draw.Src)
 	drawGradient(rgba)
-
-	c := freetype.NewContext()
-	c.SetDPI(dpi)
-	c.SetFont(f)
-	c.SetFontSize(size)
-	c.SetClip(rgba.Bounds())
-	c.SetDst(rgba)
-	c.SetSrc(fg)
-	c.SetHinting(font.HintingFull)
+	if err := drawLabels(rgba, labels); err != nil {
+		return "", err
+	}
 
 	// Save that RGBA image to disk.
 	if err := outFile.Close(); err != nil {
@@ -180,20 +126,6 @@ func addText(album model.Album, labels []string,
 		return "", err
 	}
 
-	ptBlack := freetype.Pt(10, 10+int(c.PointToFixed(size)>>6))
-	ptWhite := freetype.Pt(11, 11+int(c.PointToFixed(size)>>6))
-	for _, label := range labels {
-		err = writeText(image.Black, label, c, ptBlack)
-		if err != nil {
-			return "", err
-		}
-		err = writeText(image.White, label, c, ptWhite)
-		if err != nil {
-			return "", err
-		}
-		ptBlack.Y += c.PointToFixed(size * spacing)
-		ptWhite.Y += c.PointToFixed(size * spacing)
-	}
 	b := bufio.NewWriter(outFile)
 	err = png.Encode(b, rgba)
 	if err != nil {
