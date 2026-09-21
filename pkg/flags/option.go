@@ -1,9 +1,9 @@
 package flags
 
-// Struct for adding a new command line option to the CLI
-// The Option function returns a cli flag, and the parse function parses the
-// provided input.
+// Option pairs registration of a flag value F with conversion to a parsed value P.
 type Option[F any, P any] struct {
+	// Option registers the flag and returns a pointer to its value.
 	Option func() *F
-	Parse  func(t F) (P, error)
+	// Parse converts and validates the flag value.
+	Parse func(t F) (P, error)
 }

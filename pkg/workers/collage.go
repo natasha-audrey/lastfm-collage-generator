@@ -30,9 +30,12 @@ var (
 // Collage creates an album collage. The optional functions make the I/O at the
 // edges replaceable; a zero-value Collage uses the filesystem and HTTP.
 type Collage struct {
+	// Prepare prepares artwork; nil downloads and labels images under their local paths.
 	Prepare func([]model.Album) error
-	Load    func(model.Album) (image.Image, error)
-	Save    func(string, image.Image) error
+	// Load reads a tile; nil decodes the PNG at Album.LocalImage + ".png".
+	Load func(model.Album) (image.Image, error)
+	// Save writes the collage; nil creates or overwrites the named file as a PNG.
+	Save func(string, image.Image) error
 }
 
 func downloadImages(albums []model.Album) error {
@@ -253,7 +256,10 @@ func composeCollage(albums []model.Album, size int, load func(model.Album) (imag
 	return result, nil
 }
 
-// MakeCollage makes a collage of albums given an array of albums
+// MakeCollage prepares all albums, places up to size*size tiles in row order,
+// and saves the result to name. The canvas is size*300 pixels on each side,
+// with unused space filled black; artwork is not resized. Size must be positive.
+// It returns the saved image, or an error from preparation, composition, or saving.
 func (c Collage) MakeCollage(albums []model.Album, size int, name string) (image.Image, error) {
 	prepare := c.Prepare
 	if prepare == nil {

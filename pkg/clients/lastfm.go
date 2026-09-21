@@ -9,11 +9,14 @@ import (
 	"net/http"
 )
 
+// LastFmClient requests album listening data from Last.fm.
 type LastFmClient struct {
 	http   *http.Client
 	config config.LastFmConfig
 }
 
+// NewLastFmClientFromHTTP creates a client using a non-nil HTTP client and
+// configuration loaded from environment variables.
 func NewLastFmClientFromHTTP(httpClient *http.Client) *LastFmClient {
 	config := &config.LastFmConfig{}
 	config.Init()
@@ -31,6 +34,9 @@ func validateTopAlbumsInput(c LastFmClient, user string) error {
 	return nil
 }
 
+// GetTopAlbums requests up to 100 top albums for user over tf.
+// It returns the raw response without checking its status or decoding API errors.
+// The caller is responsible for closing the response body.
 func (c LastFmClient) GetTopAlbums(tf timeframe.TimeFrame, user string) (*http.Response, error) {
 	err := validateTopAlbumsInput(c, user)
 	if err != nil {
