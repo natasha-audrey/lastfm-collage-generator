@@ -1,5 +1,0 @@
----
-alwaysApply: true
----
-
-- Always use conventional commits when making commits and in PR titles.
