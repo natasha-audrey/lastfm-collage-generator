@@ -25,6 +25,19 @@ func TestParse_UsesDefaults(t *testing.T) {
 	}
 }
 
+func TestParse_VersionSkipsCollageValidation(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "missing", "collage.png")
+	withCommandLine(t, "-v", "-t", "invalid", "-s", "2", "-p", path)
+
+	got, err := Parse()
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	if !got.Version {
+		t.Error("Parse().Version = false, want true")
+	}
+}
+
 func TestParse_ParsesProvidedValues(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "nested", "collage.png")
 	if err := os.Mkdir(filepath.Dir(path), 0o755); err != nil {
