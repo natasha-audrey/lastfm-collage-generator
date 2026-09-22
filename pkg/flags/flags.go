@@ -17,10 +17,13 @@ type Flags struct {
 	Path string
 	// User is the Last.fm username to query.
 	User string
+	// Version requests the CLI version instead of a collage.
+	Version bool
 }
 
-// Parse registers and parses -t, -s, -p, and -u on flag.CommandLine.
+// Parse registers and parses -t, -s, -p, -u, and -v on flag.CommandLine.
 // Defaults are 7day, 5, ./collage.png, and tashayasha, respectively.
+// When -v is set, collage option validation is skipped.
 // It prints usage on validation failure and returns the parsed options with an error.
 // Output path validation may temporarily create and remove a file.
 func Parse() (*Flags, error) {
@@ -28,7 +31,11 @@ func Parse() (*Flags, error) {
 	s := sizeOption.Option()
 	p := pathOption.Option()
 	u := userOption.Option()
+	v := flag.Bool("v", false, "Print the CLI version and exit")
 	flag.Parse()
+	if *v {
+		return &Flags{Version: true}, nil
+	}
 
 	var errors error = nil
 
@@ -54,9 +61,9 @@ func Parse() (*Flags, error) {
 	}
 
 	return &Flags{
-		time,
-		size,
-		path,
-		user,
+		Time: time,
+		Size: size,
+		Path: path,
+		User: user,
 	}, errors
 }

@@ -39,8 +39,13 @@ Usage of ./lastfm-collage-generator:
           7day 1month 3month 6month 12month overall (default "7day")
   -u string
         The user to query (default "tashayasha")
+  -v
+        Print the CLI version and exit
 ```
 
+Run `./lastfm-collage-generator -v` to print the version. Local builds default to
+`dev`. To embed a release version, build with
+`go build -ldflags "-X main.version=v0.6.0"`.
 
 ## Text rendering
 
