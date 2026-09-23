@@ -138,7 +138,7 @@ func TestGetTopAlbums_ErrorsOnEmptyUser(t *testing.T) {
 		}
 		t.Fatal("GetTopAlbums() error = nil")
 	}
-	if err.Error() != "User cannot be blank" {
+	if err.Error() != "user cannot be blank" {
 		t.Fatalf("Error = \"%v\", wanted \"User cannot be blank\"", err)
 	}
 	if res != nil {
@@ -164,7 +164,7 @@ func TestGetTopAlbums_ErrorsOnEmptyAPIKey(t *testing.T) {
 		}
 		t.Fatal("GetTopAlbums() error = nil")
 	}
-	if err.Error() != "Missing API Key" {
+	if err.Error() != "missing API Key" {
 		t.Fatalf("Error = \"%v\", wanted \"Missing API Key\"", err)
 	}
 	if res != nil {

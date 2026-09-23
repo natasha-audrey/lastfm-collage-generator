@@ -26,10 +26,10 @@ func NewLastFmClientFromHTTP(httpClient *http.Client) *LastFmClient {
 
 func validateTopAlbumsInput(c LastFmClient, user string) error {
 	if user == "" {
-		return errors.New("User cannot be blank")
+		return errors.New("user cannot be blank")
 	}
 	if c.config.APIKey == "" {
-		return errors.New("Missing API Key")
+		return errors.New("missing API Key")
 	}
 	return nil
 }
