@@ -3,6 +3,13 @@
 Release notes are maintained by release-please from Conventional Commits.
 For earlier releases, see [GitHub Releases](https://github.com/natasha-audrey/lastfm-collage-generator/releases).
 
+## [0.8.0](https://github.com/natasha-audrey/lastfm-collage-generator/compare/v0.7.0...v0.8.0) (2026-09-23)
+
+
+### Features
+
+* migrate CLI to Cobra with long-form flags ([#79](https://github.com/natasha-audrey/lastfm-collage-generator/issues/79)) ([18fe9ff](https://github.com/natasha-audrey/lastfm-collage-generator/commit/18fe9ff63898b9e1643c1574fdb6cac2f2a6beac))
+
 ## [0.7.0](https://github.com/natasha-audrey/lastfm-collage-generator/compare/v0.6.0...v0.7.0) (2026-09-23)
 
 
