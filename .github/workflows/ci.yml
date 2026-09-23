@@ -11,6 +11,14 @@ jobs:
         uses: actions/setup-go@v7
         with:
           go-version: '~1.27.0' # The Go version to download (if necessary) and use.
+      - name: Check Go formatting
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "Run gofmt on the following files:"
+            printf '%s\n' "$unformatted"
+            exit 1
+          fi
       - name: Build Executable
         run: |
           go build
