@@ -43,9 +43,12 @@ Usage of ./lastfm-collage-generator:
         Print the CLI version and exit
 ```
 
-Run `./lastfm-collage-generator -v` to print the version. Local builds default to
-`dev`. To embed a release version, build with
-`go build -ldflags "-X main.version=v0.6.0"`.
+
+## Releases
+
+PR titles must follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)
+(e.g. `fix:` or `feat:`) so [Release Please](https://github.com/googleapis/release-please)
+can create a release.
 
 ## Text rendering
 
