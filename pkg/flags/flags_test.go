@@ -1,155 +1,123 @@
 package flags
 
 import (
-	"flag"
-	"io"
+	"bytes"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"natasha-audrey/lastfm-collage-generator/pkg/config/timeframe"
 )
 
-func TestParse_UsesDefaults(t *testing.T) {
+func TestCommandOptions(t *testing.T) {
+	for _, long := range []bool{false, true} {
+		name := "short"
+		if long {
+			name = "long"
+		}
+		t.Run(name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "collage.png")
+			args := []string{"-u", "someone", "-t", "overall", "-s", "10", "-p", path}
+			if long {
+				args = []string{"--user=someone", "--timeframe=overall", "--size=10", "--path=" + path}
+			}
+			var got *Flags
+			cmd := NewCommand("v1.0.0", func(f *Flags) error { got = f; return nil })
+			cmd.SetArgs(args)
+			if err := cmd.Execute(); err != nil {
+				t.Fatal(err)
+			}
+			want := Flags{Time: timeframe.Overall, Size: 10, Path: path, User: "someone"}
+			if got == nil || *got != want {
+				t.Fatalf("got %+v, want %+v", got, want)
+			}
+			if _, err := os.Stat(path); !os.IsNotExist(err) {
+				t.Fatalf("validation left a file: %v", err)
+			}
+		})
+	}
+}
+
+func TestCommandDefaults(t *testing.T) {
+	t.Chdir(t.TempDir())
+	for _, args := range [][]string{{}, {"--user", ""}} {
+		var got *Flags
+		cmd := NewCommand("v1.0.0", func(f *Flags) error { got = f; return nil })
+		cmd.SetArgs(args)
+		if err := cmd.Execute(); err != nil {
+			t.Fatal(err)
+		}
+		want := Flags{Time: timeframe.Week, Size: 5, Path: "./collage.png", User: "tashayasha"}
+		if got == nil || *got != want {
+			t.Fatalf("got %+v, want %+v", got, want)
+		}
+	}
+}
+
+func TestCommandHelpAndVersion(t *testing.T) {
+	for _, arg := range []string{"-v", "--version", "-h", "--help"} {
+		t.Run(arg, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "collage.png")
+			cmd := NewCommand("v1.0.0", func(*Flags) error { t.Fatal("collage callback called"); return nil })
+			var output bytes.Buffer
+			cmd.SetOut(&output)
+			cmd.SetArgs([]string{arg, "--timeframe", "invalid", "--size", "2", "--path", path})
+			if err := cmd.Execute(); err != nil {
+				t.Fatal(err)
+			}
+			if arg == "-v" || arg == "--version" {
+				if output.String() != "v1.0.0\n" {
+					t.Fatalf("unexpected version: %q", output.String())
+				}
+			} else {
+				for _, flag := range []string{"--user", "--timeframe", "--size", "--path", "--version"} {
+					if !strings.Contains(output.String(), flag) {
+						t.Errorf("help missing %s", flag)
+					}
+				}
+			}
+			if _, err := os.Stat(path); !os.IsNotExist(err) {
+				t.Fatalf("help/version touched output: %v", err)
+			}
+		})
+	}
+}
+
+func TestCommandRejectsInvalidOptions(t *testing.T) {
+	for _, args := range [][]string{
+		{"--timeframe", "invalid"}, {"--size", "2"}, {"--size", "11"},
+		{"--size", "abc"}, {"--path", filepath.Join(t.TempDir(), "missing", "collage.png")},
+		{"--unknown"}, {"--user"}, {"unexpected"},
+	} {
+		t.Run(strings.Join(args, " "), func(t *testing.T) {
+			cmd := NewCommand("v1.0.0", func(*Flags) error { t.Fatal("collage callback called"); return nil })
+			cmd.SetOut(&bytes.Buffer{})
+			cmd.SetErr(&bytes.Buffer{})
+			cmd.SetArgs(args)
+			if err := cmd.Execute(); err == nil {
+				t.Fatal("expected error")
+			}
+		})
+	}
+}
+
+func TestCommandPreservesExistingFile(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "collage.png")
-	withCommandLine(t, "-p", path)
-
-	got, err := Parse()
+	const contents = "existing collage"
+	if err := os.WriteFile(path, []byte(contents), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	cmd := NewCommand("v1.0.0", func(*Flags) error { return nil })
+	cmd.SetArgs([]string{"--path", path})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	got, err := os.ReadFile(path)
 	if err != nil {
-		t.Fatalf("Parse() error = %v", err)
+		t.Fatal(err)
 	}
-
-	want := &Flags{Time: timeframe.Week, Size: 5, Path: path, User: "tashayasha"}
-	if *got != *want {
-		t.Errorf("Parse() = %+v, want %+v", *got, *want)
+	if string(got) != contents {
+		t.Fatalf("file changed: %q", got)
 	}
-}
-
-func TestParse_VersionSkipsCollageValidation(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "missing", "collage.png")
-	withCommandLine(t, "-v", "-t", "invalid", "-s", "2", "-p", path)
-
-	got, err := Parse()
-	if err != nil {
-		t.Fatalf("Parse() error = %v", err)
-	}
-	if !got.Version {
-		t.Error("Parse().Version = false, want true")
-	}
-}
-
-func TestParse_ParsesProvidedValues(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "nested", "collage.png")
-	if err := os.Mkdir(filepath.Dir(path), 0o755); err != nil {
-		t.Fatalf("Mkdir(%q): %v", filepath.Dir(path), err)
-	}
-	withCommandLine(t, "-t", "overall", "-s", "10", "-p", path, "-u", "someone")
-
-	got, err := Parse()
-	if err != nil {
-		t.Fatalf("Parse() error = %v", err)
-	}
-
-	want := &Flags{Time: timeframe.Overall, Size: 10, Path: path, User: "someone"}
-	if *got != *want {
-		t.Errorf("Parse() = %+v, want %+v", *got, *want)
-	}
-}
-
-func TestParse_AcceptsExistingPath(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "existing-collage.png")
-	const originalContents = "existing collage"
-	if err := os.WriteFile(path, []byte(originalContents), 0o644); err != nil {
-		t.Fatalf("WriteFile(%q): %v", path, err)
-	}
-	withCommandLine(t, "-p", path)
-
-	got, err := Parse()
-	if err != nil {
-		t.Fatalf("Parse() error = %v", err)
-	}
-	if got.Path != path {
-		t.Errorf("Parse().Path = %q, want %q", got.Path, path)
-	}
-
-	contents, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatalf("ReadFile(%q): %v", path, err)
-	}
-	if string(contents) != originalContents {
-		t.Errorf("existing file contents = %q, want %q", contents, originalContents)
-	}
-}
-
-func TestParse_ParsesDefaultUser(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "collage.png")
-	withCommandLine(t, "-p", path, "-u", "")
-
-	got, err := Parse()
-	if err != nil {
-		t.Fatalf("Parse() error = %v", err)
-	}
-
-	want := &Flags{Time: timeframe.Week, Size: 5, Path: path, User: "tashayasha"}
-	if *got != *want {
-		t.Errorf("Parse() = %+v, want %+v", *got, *want)
-	}
-}
-
-func TestParse_ReturnsErrorForInvalidTime(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "collage.png")
-	withCommandLine(t, "-t", "not-a-timeframe", "-p", path)
-
-	got, err := Parse()
-	if err == nil {
-		t.Fatal("Parse() error = nil, want error for invalid time frame")
-	}
-	if got.Time != 0 {
-		t.Errorf("Parse().Time = %v, want zero TimeFrame", got.Time)
-	}
-}
-
-func TestParse_ReturnsErrorForInvalidSize(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "collage.png")
-	withCommandLine(t, "-s", "2", "-p", path)
-
-	got, err := Parse()
-	if err == nil {
-		t.Fatal("Parse() error = nil, want error for invalid size")
-	}
-	if got.Size != 2 {
-		t.Errorf("Parse().Size = %d, want 2", got.Size)
-	}
-}
-
-func TestParse_ReturnsErrorForUnwritablePath(t *testing.T) {
-	parent := filepath.Join(t.TempDir(), "not-a-directory")
-	if err := os.WriteFile(parent, nil, 0o644); err != nil {
-		t.Fatalf("WriteFile(%q): %v", parent, err)
-	}
-	withCommandLine(t, "-p", filepath.Join(parent, "collage.png"))
-
-	got, err := Parse()
-	if err == nil {
-		t.Fatal("Parse() error = nil, want error for unwritable path")
-	}
-	if got.Path != "" {
-		t.Errorf("Parse().Path = %q, want empty string", got.Path)
-	}
-}
-
-func withCommandLine(t *testing.T, args ...string) {
-	t.Helper()
-
-	originalCommandLine := flag.CommandLine
-	originalArgs := os.Args
-	commandLine := flag.NewFlagSet("test", flag.ContinueOnError)
-	commandLine.SetOutput(io.Discard)
-	flag.CommandLine = commandLine
-	os.Args = append([]string{"test"}, args...)
-
-	t.Cleanup(func() {
-		flag.CommandLine = originalCommandLine
-		os.Args = originalArgs
-	})
 }

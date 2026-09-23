@@ -7,6 +7,8 @@ Table of Contents
   - [Environment Variables](#environment-variables)
   - [Generating LastFM API keys.](#generating-lastfm-api-keys)
   - [Usage](#usage)
+  - [Releases](#releases)
+  - [Text rendering](#text-rendering)
   - [Example Collage](#example-collage)
 
 </details>
@@ -26,21 +28,24 @@ See Last.fm's [docs](https://www.last.fm/api#getting-started).
 
 ## Usage
 
+```text
+Usage:
+  lastfm-collage-generator [flags]
+
+Flags:
+  -h, --help               help for lastfm-collage-generator
+  -p, --path string        The path the collage is written to (default "./collage.png")
+  -s, --size int           Sets the size x size of the collage (3-10) (default 5)
+  -t, --timeframe string   The listening period: 7day, 1month, 3month, 6month, 12month, overall (default "7day")
+  -u, --user string        The user to query (default "tashayasha")
+  -v, --version            Prints the CLI version
 ```
-Usage of ./lastfm-collage-generator:
-  -p string
-        The path the collage is written to (default "./collage.png")
-  -s int
-        Sets the size x size of the collage (default 5)
-  -t string
-        The time frame to generate the collage for.
-    
-        Available options:
-          7day 1month 3month 6month 12month overall (default "7day")
-  -u string
-        The user to query (default "tashayasha")
-  -v
-        Print the CLI version and exit
+
+For example:
+
+```sh
+go build
+./lastfm-collage-generator --user tashayasha --timeframe 1month --size 5 --path ./collage.png
 ```
 
 
