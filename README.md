@@ -57,16 +57,11 @@ can create a release.
 
 ## Text rendering
 
-Labels retain IBM Plex Mono where possible and use bundled Noto fonts for CJK,
-Arabic, Hebrew, Devanagari, Thai, additional symbols, and monochrome emoji.
-Text is shaped and wrapped by pixel width, including titles without spaces;
-wrapped artist names move the album title down. Text beyond the tile height is
-clipped. Coverage is broad but does not include every Unicode character; missing
-characters display the primary font's missing-glyph symbol. See
-[font sources and licenses](static/fonts/README.md) for the bundled coverage.
+Labels use IBM Plex Mono with bundled Noto fallbacks for other scripts, symbols,
+and emoji. Text wraps to fit each tile and is clipped at its bottom edge.
+Unicode coverage is limited; see [font sources and licenses](static/fonts/README.md).
 
-Generated tiles include their labels and are cached. After updating the renderer,
-delete `./generated` once to regenerate labels with the new fonts.
+Delete `./generated` after renderer updates to regenerate cached images.
 
 ## Example Collage
 
