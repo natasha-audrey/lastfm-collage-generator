@@ -2,9 +2,10 @@
 package flags
 
 import (
-	"flag"
 	"fmt"
 	"natasha-audrey/lastfm-collage-generator/pkg/config/timeframe"
+
+	"github.com/spf13/cobra"
 )
 
 // Flags holds the parsed collage options.
@@ -17,53 +18,44 @@ type Flags struct {
 	Path string
 	// User is the Last.fm username to query.
 	User string
-	// Version requests the CLI version instead of a collage.
-	Version bool
 }
 
-// Parse registers and parses -t, -s, -p, -u, and -v on flag.CommandLine.
-// Defaults are 7day, 5, ./collage.png, and tashayasha, respectively.
-// When -v is set, collage option validation is skipped.
-// It prints usage on validation failure and returns the parsed options with an error.
-// Output path validation may temporarily create and remove a file.
-func Parse() (*Flags, error) {
-	t := timeOption.Option()
-	s := sizeOption.Option()
-	p := pathOption.Option()
-	u := userOption.Option()
-	v := flag.Bool("v", false, "Print the CLI version and exit")
-	flag.Parse()
-	if *v {
-		return &Flags{Version: true}, nil
+// NewCommand builds the CLI and calls run with validated collage options.
+// Help and version requests skip validation and collage generation.
+func NewCommand(version string, run func(*Flags) error) *cobra.Command {
+	options := &Flags{}
+	var period string
+	cmd := &cobra.Command{
+		Use:           "lastfm-collage-generator",
+		Short:         "Generate a collage of your top Last.fm albums",
+		Version:       version,
+		Args:          cobra.NoArgs,
+		SilenceErrors: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			var err error
+			options.Time, err = timeframe.ParseString(period)
+			if err != nil {
+				return err
+			}
+			if options.Size < 3 || options.Size > 10 {
+				return fmt.Errorf("size %v needs to be between 3 and 10", options.Size)
+			}
+			options.Path, err = parsePath(options.Path)
+			if err != nil {
+				return err
+			}
+			if options.User == "" {
+				options.User = "tashayasha"
+			}
+			cmd.SilenceUsage = true
+			return run(options)
+		},
 	}
-
-	var errors error = nil
-
-	time, err := timeOption.Parse(*t)
-	if err != nil {
-		errors = fmt.Errorf("%w", err)
-	}
-
-	size, err := sizeOption.Parse(*s)
-	if err != nil {
-		errors = fmt.Errorf("%w", err)
-	}
-
-	path, err := pathOption.Parse(*p)
-	if err != nil {
-		errors = fmt.Errorf("%w", err)
-	}
-
-	user, _ := userOption.Parse(*u)
-
-	if errors != nil {
-		flag.Usage()
-	}
-
-	return &Flags{
-		Time: time,
-		Size: size,
-		Path: path,
-		User: user,
-	}, errors
+	cmd.SetVersionTemplate("{{.Version}}\n")
+	cmd.Flags().StringVarP(&options.User, "user", "u", "tashayasha", "The user to query")
+	cmd.Flags().StringVarP(&period, "timeframe", "t", "7day", "The listening period: 7day, 1month, 3month, 6month, 12month, overall")
+	cmd.Flags().IntVarP(&options.Size, "size", "s", 5, "Sets the size x size of the collage (3-10)")
+	cmd.Flags().StringVarP(&options.Path, "path", "p", "./collage.png", "The path the collage is written to")
+	cmd.Flags().BoolP("version", "v", false, "Prints the CLI version")
+	return cmd
 }
