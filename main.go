@@ -15,7 +15,7 @@ import (
 )
 
 // version is the CLI release version, maintained by release-please.
-const version = "v0.6.0" // x-release-please-version
+const version = "v0.7.0" // x-release-please-version
 
 func generateCollage(f *flags.Flags) {
 	client := clients.NewLastFmClientFromHTTP(&http.Client{})
