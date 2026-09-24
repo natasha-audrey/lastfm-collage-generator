@@ -13,7 +13,7 @@ import (
 	"golang.org/x/image/math/fixed"
 )
 
-func TestLabelUnicodeCoverage(t *testing.T) {
+func TestLabelRenderer_UnicodeCoverage(t *testing.T) {
 	r, err := newLabelRenderer()
 	if err != nil {
 		t.Fatal(err)
@@ -40,7 +40,7 @@ func TestLabelUnicodeCoverage(t *testing.T) {
 	}
 }
 
-func TestLabelWrapping(t *testing.T) {
+func TestLabelRenderer_Wrapping(t *testing.T) {
 	r, err := newLabelRenderer()
 	if err != nil {
 		t.Fatal(err)
@@ -76,7 +76,7 @@ func TestLabelWrapping(t *testing.T) {
 	}
 }
 
-func TestLabelShaping(t *testing.T) {
+func TestLabelRenderer_Shaping(t *testing.T) {
 	r, err := newLabelRenderer()
 	if err != nil {
 		t.Fatal(err)
@@ -130,7 +130,7 @@ func TestLabelShaping(t *testing.T) {
 	}
 }
 
-func TestLabelsAdvancePastWrappedArtist(t *testing.T) {
+func TestLabelRenderer_AdvancePastWrappedArtist(t *testing.T) {
 	r, err := newLabelRenderer()
 	if err != nil {
 		t.Fatal(err)
@@ -165,8 +165,8 @@ func TestLabelsAdvancePastWrappedArtist(t *testing.T) {
 	}
 }
 
-// TestLabelPreview optionally writes a visual fixture without requiring Last.fm.
-func TestLabelPreview(t *testing.T) {
+// TestLabelRenderer_Preview optionally writes a visual fixture without requiring Last.fm.
+func TestLabelRenderer_Preview(t *testing.T) {
 	path := os.Getenv("COLLAGE_TEXT_PREVIEW")
 	if path == "" {
 		t.Skip("set COLLAGE_TEXT_PREVIEW to export a preview")

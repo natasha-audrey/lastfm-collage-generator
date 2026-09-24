@@ -10,7 +10,7 @@ import (
 	"natasha-audrey/lastfm-collage-generator/pkg/config/timeframe"
 )
 
-func TestCommandOptions(t *testing.T) {
+func TestCommand_Options(t *testing.T) {
 	for _, long := range []bool{false, true} {
 		name := "short"
 		if long {
@@ -39,7 +39,7 @@ func TestCommandOptions(t *testing.T) {
 	}
 }
 
-func TestCommandDefaults(t *testing.T) {
+func TestCommand_Defaults(t *testing.T) {
 	t.Chdir(t.TempDir())
 	for _, args := range [][]string{{}, {"--user", ""}} {
 		var got *Flags
@@ -55,7 +55,7 @@ func TestCommandDefaults(t *testing.T) {
 	}
 }
 
-func TestCommandHelpAndVersion(t *testing.T) {
+func TestCommand_HelpAndVersion(t *testing.T) {
 	for _, arg := range []string{"-v", "--version", "-h", "--help"} {
 		t.Run(arg, func(t *testing.T) {
 			path := filepath.Join(t.TempDir(), "collage.png")
@@ -84,7 +84,7 @@ func TestCommandHelpAndVersion(t *testing.T) {
 	}
 }
 
-func TestCommandRejectsInvalidOptions(t *testing.T) {
+func TestCommand_RejectsInvalidOptions(t *testing.T) {
 	for _, args := range [][]string{
 		{"--timeframe", "invalid"}, {"--size", "2"}, {"--size", "11"},
 		{"--size", "abc"}, {"--path", filepath.Join(t.TempDir(), "missing", "collage.png")},
@@ -102,7 +102,7 @@ func TestCommandRejectsInvalidOptions(t *testing.T) {
 	}
 }
 
-func TestCommandPreservesExistingFile(t *testing.T) {
+func TestCommand_PreservesExistingFile(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "collage.png")
 	const contents = "existing collage"
 	if err := os.WriteFile(path, []byte(contents), 0o644); err != nil {
