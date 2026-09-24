@@ -180,7 +180,7 @@ func TestDownloadImages(t *testing.T) {
 	}
 }
 
-func TestCollageMakeCollageComposesAndSavesImages(t *testing.T) {
+func TestCollage_MakeCollageComposesAndSavesImages(t *testing.T) {
 	albums := []model.Album{{Name: "one"}, {Name: "two"}}
 	images := map[string]image.Image{
 		"one": solidImage(color.RGBA{R: 255, A: 255}),
@@ -228,7 +228,7 @@ func TestCollageMakeCollageComposesAndSavesImages(t *testing.T) {
 	}
 }
 
-func TestCollageMakeCollageReturnsDependencyErrors(t *testing.T) {
+func TestCollage_MakeCollageReturnsDependencyErrors(t *testing.T) {
 	want := errors.New("prepare failed")
 	collage := Collage{
 		Prepare: func([]model.Album) error { return want },
@@ -244,7 +244,7 @@ func TestCollageMakeCollageReturnsDependencyErrors(t *testing.T) {
 	}
 }
 
-func TestComposeCollageRejectsInvalidSize(t *testing.T) {
+func TestComposeCollage_RejectsInvalidSize(t *testing.T) {
 	_, err := composeCollage(nil, 0, nil)
 	if err == nil {
 		t.Fatal("composeCollage() error = nil, want an error")
