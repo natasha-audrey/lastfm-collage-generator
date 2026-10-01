@@ -208,6 +208,7 @@ func Run(ctx context.Context, address string) error {
 		return err
 	}
 	defer listener.Close()
+	fmt.Fprintf(os.Stderr, "Server listening at http://%s\n", listener.Addr())
 	srv := &http.Server{
 		Handler:           newHandler(generator(&http.Client{Timeout: 60 * time.Second}), 60*time.Second),
 		ReadHeaderTimeout: 5 * time.Second,
