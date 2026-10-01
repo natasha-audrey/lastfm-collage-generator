@@ -30,8 +30,16 @@ See Last.fm's [docs](https://www.last.fm/api#getting-started).
 ## Usage
 
 ```text
+Generate a collage of your top Last.fm albums
+
 Usage:
   lastfm-collage-generator [flags]
+  lastfm-collage-generator [command]
+
+Available Commands:
+  completion  Generate the autocompletion script for the specified shell
+  help        Help about any command
+  serve       Serve the collage generation API locally
 
 Flags:
   -h, --help               help for lastfm-collage-generator
@@ -40,6 +48,9 @@ Flags:
   -t, --timeframe string   The listening period: 7day, 1month, 3month, 6month, 12month, overall (default "7day")
   -u, --user string        The user to query (default "tashayasha")
   -v, --version            Prints the CLI version
+
+Use "lastfm-collage-generator [command] --help" for more information about a command.
+
 ```
 
 For example:
