@@ -2,8 +2,8 @@
 package clients
 
 import (
+	"context"
 	"errors"
-	"log/slog"
 	"natasha-audrey/lastfm-collage-generator/pkg/config"
 	"natasha-audrey/lastfm-collage-generator/pkg/config/timeframe"
 	"net/http"
@@ -38,11 +38,16 @@ func validateTopAlbumsInput(c LastFmClient, user string) error {
 // It returns the raw response without checking its status or decoding API errors.
 // The caller is responsible for closing the response body.
 func (c LastFmClient) GetTopAlbums(tf timeframe.TimeFrame, user string) (*http.Response, error) {
+	return c.GetTopAlbumsContext(context.Background(), tf, user)
+}
+
+// GetTopAlbumsContext requests top albums with cancellation from ctx.
+func (c LastFmClient) GetTopAlbumsContext(ctx context.Context, tf timeframe.TimeFrame, user string) (*http.Response, error) {
 	err := validateTopAlbumsInput(c, user)
 	if err != nil {
 		return nil, err
 	}
-	req, err := http.NewRequest("GET", c.config.BaseURL, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", c.config.BaseURL, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -55,8 +60,6 @@ func (c LastFmClient) GetTopAlbums(tf timeframe.TimeFrame, user string) (*http.R
 	q.Add("method", "user.gettopalbums")
 	q.Add("limit", "100")
 	req.URL.RawQuery = q.Encode()
-
-	slog.Debug(req.URL.String())
 
 	res, err := c.http.Do(req)
 	if err != nil {

@@ -4,13 +4,17 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"natasha-audrey/lastfm-collage-generator/pkg/clients"
 	"natasha-audrey/lastfm-collage-generator/pkg/flags"
+	"natasha-audrey/lastfm-collage-generator/pkg/server"
 	"natasha-audrey/lastfm-collage-generator/pkg/workers"
 	"net/http"
 	"os"
+	"os/signal"
 	"path/filepath"
+	"syscall"
 )
 
 // version is the CLI release version, maintained by release-please.
@@ -26,8 +30,8 @@ func generateCollage(f *flags.Flags) error {
 	if err != nil {
 		return err
 	}
-	workers.Collage{}.MakeCollage(albums, f.Size, f.Path)
-	return nil
+	_, err = (workers.Collage{}).MakeCollage(albums, f.Size, f.Path)
+	return err
 }
 
 func main() {
@@ -37,6 +41,11 @@ func main() {
 		}
 		return generateCollage(options)
 	})
+	cmd.AddCommand(flags.NewServeCommand(func(address string) error {
+		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+		defer stop()
+		return server.Run(ctx, address)
+	}))
 	if err := cmd.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)

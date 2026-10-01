@@ -3,7 +3,6 @@ package workers
 
 import (
 	"encoding/json"
-	"errors"
 	"io"
 	"natasha-audrey/lastfm-collage-generator/pkg/model"
 	"net/http"
@@ -11,19 +10,26 @@ import (
 	"regexp"
 )
 
+// APIError is an error reported by Last.fm.
+type APIError struct {
+	Code    int
+	Message string
+}
+
+func (e *APIError) Error() string { return e.Message }
+
 // Albums converts Last.fm top-album responses into collage metadata.
 type Albums struct{}
 
 // Parse reads a Last.fm JSON response and assigns sanitized local artwork paths
 // under ./generated. It returns read, JSON, or Last.fm API errors.
-// The response must have a non-nil body and each album must have an image entry.
-// Parse closes the body after a successful read, including when decoding fails.
+// The response must have a non-nil body. Parse always closes it.
 func (a Albums) Parse(res *http.Response) ([]model.Album, error) {
+	defer res.Body.Close()
 	responseBodyBytes, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, err
 	}
-	defer res.Body.Close()
 
 	var result model.LastFMTopAlbums
 	err = json.Unmarshal(responseBodyBytes, &result)
@@ -31,7 +37,7 @@ func (a Albums) Parse(res *http.Response) ([]model.Album, error) {
 		return nil, err
 	}
 	if result.Error != 0 {
-		return nil, errors.New(result.Message)
+		return nil, &APIError{Code: result.Error, Message: result.Message}
 	}
 
 	var albums []model.Album
@@ -40,7 +46,9 @@ func (a Albums) Parse(res *http.Response) ([]model.Album, error) {
 		album.Name = value.Name
 		album.Listens = value.Playcount
 		album.Artist = value.Artist["name"]
-		album.Image = value.Image[len(value.Image)-1]["#text"]
+		if len(value.Image) > 0 {
+			album.Image = value.Image[len(value.Image)-1]["#text"]
+		}
 		fileReg := regexp.MustCompile(`[^0-9A-Za-z_\-]`)
 		artist := fileReg.ReplaceAllString(album.Artist, "_")
 		name := fileReg.ReplaceAllString(album.Name, "_")

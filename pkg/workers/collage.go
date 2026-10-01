@@ -2,7 +2,9 @@ package workers
 
 import (
 	"bufio"
+	"context"
 	"errors"
+	"fmt"
 	"image"
 	"image/draw"
 
@@ -25,47 +27,90 @@ type Collage struct {
 	Save func(string, image.Image) error
 }
 
-func downloadImages(albums []model.Album) error {
-	for _, album := range albums {
-		if album.Image != "" {
-			// If image exists don't bother making a new one
-			if _, err := os.Stat(album.LocalImage + ".png"); os.IsNotExist(err) {
-				slog.Info(album.LocalImage + ".png not found: Fetching " + album.Image)
-				response, err := http.Get(album.Image)
-				if err != nil {
-					return err
-				}
+// DownloadError indicates an artwork request failed.
+type DownloadError struct{ Err error }
 
-				_, err = addText(
-					album,
-					[]string{album.Artist, album.Name},
-					response.Body)
-				closeErr := response.Body.Close()
+func (e *DownloadError) Error() string { return e.Err.Error() }
+func (e *DownloadError) Unwrap() error { return e.Err }
 
-				if err != nil {
-					return err
-				}
-				if closeErr != nil {
-					return closeErr
-				}
-			} else {
-				slog.Info(album.LocalImage + ".png already exists, skipping fetch.")
-			}
-		} else {
-			_, err := addText(album, []string{album.Artist, album.Name}, nil)
-			if err != nil {
-				return err
-			}
-		}
+type artworkBody struct{ io.ReadCloser }
+
+func (b artworkBody) Read(p []byte) (int, error) {
+	n, err := b.ReadCloser.Read(p)
+	if err != nil && err != io.EOF {
+		err = &DownloadError{err}
 	}
-	return nil
+	return n, err
 }
 
-func drawGradient(dst *image.RGBA) {
-	fp, _ := os.Open("./static/black-gradient.png")
-	fp.Seek(0, 0)
-	img, _ := png.Decode(fp)
+func downloadImages(albums []model.Album) error {
+	return downloadImagesContext(context.Background(), http.DefaultClient, albums)
+}
+
+func downloadImagesContext(ctx context.Context, client *http.Client, albums []model.Album) error {
+	for _, album := range albums {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		err := prepareAlbum(ctx, client, album)
+		// Cancellation must stop generation rather than turn into a placeholder.
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		var download *DownloadError
+		if errors.As(err, &download) {
+			slog.Info("Artwork download failed; using a black background", "album", album.Name)
+			_, err = addText(album, []string{album.Artist, album.Name}, nil)
+		}
+		if err != nil {
+			return err
+		}
+	}
+	return ctx.Err()
+}
+
+func prepareAlbum(ctx context.Context, client *http.Client, album model.Album) error {
+	if album.Image == "" {
+		_, err := addText(album, []string{album.Artist, album.Name}, nil)
+		return err
+	}
+	if _, err := os.Stat(album.LocalImage + ".png"); err == nil {
+		return nil
+	} else if !os.IsNotExist(err) {
+		return err
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, album.Image, nil)
+	if err != nil {
+		return &DownloadError{err}
+	}
+	response, err := client.Do(req)
+	if err != nil {
+		return &DownloadError{err}
+	}
+	if response.StatusCode != http.StatusOK {
+		response.Body.Close()
+		return &DownloadError{fmt.Errorf("artwork status %d", response.StatusCode)}
+	}
+	_, err = addText(album, []string{album.Artist, album.Name}, artworkBody{response.Body})
+	closeErr := response.Body.Close()
+	if err != nil {
+		return err
+	}
+	return closeErr
+}
+
+func drawGradient(dst *image.RGBA) error {
+	fp, err := os.Open("./static/black-gradient.png")
+	if err != nil {
+		return err
+	}
+	defer fp.Close()
+	img, err := png.Decode(fp)
+	if err != nil {
+		return err
+	}
 	draw.Draw(dst, dst.Bounds(), img, image.Point{}, draw.Over)
+	return nil
 }
 
 func addText(album model.Album, labels []string,
@@ -104,7 +149,9 @@ func addText(album model.Album, labels []string,
 
 	rgba := image.NewRGBA(bounds)
 	draw.Draw(rgba, rgba.Bounds(), bg, image.Point{}, draw.Src)
-	drawGradient(rgba)
+	if err := drawGradient(rgba); err != nil {
+		return "", err
+	}
 	if err := drawLabels(rgba, labels); err != nil {
 		return "", err
 	}
@@ -208,4 +255,22 @@ func (c Collage) MakeCollage(albums []model.Album, size int, name string) (image
 		return nil, err
 	}
 	return result, nil
+}
+
+// Render prepares cached artwork and composes an image without saving a collage.
+// Failed artwork downloads use labeled black tiles. Cancellation is checked
+// between tiles and propagated to artwork downloads.
+func Render(ctx context.Context, client *http.Client, albums []model.Album, size int) (image.Image, error) {
+	if len(albums) > size*size && size > 0 {
+		albums = albums[:size*size]
+	}
+	if err := downloadImagesContext(ctx, client, albums); err != nil {
+		return nil, err
+	}
+	return composeCollage(albums, size, func(album model.Album) (image.Image, error) {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		return loadAlbumImage(album)
+	})
 }

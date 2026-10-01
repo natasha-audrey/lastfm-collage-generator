@@ -54,6 +54,8 @@ func TestDownloadImages(t *testing.T) {
 		getErr     error
 		closeErr   error
 		invalidExt string
+		status     int
+		readErr    bool
 	}{
 		{name: "empty input", empty: true},
 		{name: "download and render"},
@@ -64,7 +66,9 @@ func TestDownloadImages(t *testing.T) {
 		{name: "invalid GIF", invalidExt: ".gif"},
 		{name: "invalid PNG", invalidExt: ".png"},
 		{name: "unsupported format", invalidExt: ".webp"},
-		{name: "HTTP error", getErr: getErr},
+		{name: "network error", getErr: getErr},
+		{name: "HTTP error", status: 503},
+		{name: "body read error", readErr: true},
 		{name: "render error", badPath: true},
 		{name: "placeholder error", noImage: true, badPath: true},
 		{name: "close error", closeErr: closeErr},
@@ -97,6 +101,9 @@ func TestDownloadImages(t *testing.T) {
 				data = []byte("truncated artwork")
 			}
 			body := &collageResponseBody{Reader: bytes.NewReader(data), err: tc.closeErr}
+			if tc.readErr {
+				body.Reader = failingArtworkReader{}
+			}
 			requests := 0
 			http.DefaultClient = &http.Client{Transport: collageRoundTripper(func(r *http.Request) (*http.Response, error) {
 				requests++
@@ -106,7 +113,11 @@ func TestDownloadImages(t *testing.T) {
 				if tc.getErr != nil {
 					return nil, tc.getErr
 				}
-				return &http.Response{StatusCode: http.StatusOK, Header: make(http.Header), Body: body}, nil
+				status := tc.status
+				if status == 0 {
+					status = http.StatusOK
+				}
+				return &http.Response{StatusCode: status, Header: make(http.Header), Body: body}, nil
 			})}
 			albums := []model.Album{album}
 			if tc.empty {
@@ -117,10 +128,6 @@ func TestDownloadImages(t *testing.T) {
 			}
 			err := downloadImages(albums)
 			switch {
-			case tc.getErr != nil:
-				if !errors.Is(err, tc.getErr) {
-					t.Fatalf("error = %v, want %v", err, tc.getErr)
-				}
 			case tc.badPath:
 				var pathErr *os.PathError
 				if !errors.As(err, &pathErr) || pathErr.Path != path+".png" {
@@ -169,7 +176,7 @@ func TestDownloadImages(t *testing.T) {
 				if err != nil {
 					t.Fatalf("decode album %d: %v", i, err)
 				}
-				if tc.invalidExt != "" && color.RGBAModel.Convert(img.At(299, 299)) != (color.RGBA{A: 255}) {
+				if (tc.invalidExt != "" || tc.getErr != nil || tc.status != 0 || tc.readErr) && color.RGBAModel.Convert(img.At(299, 299)) != (color.RGBA{A: 255}) {
 					t.Errorf("album %d fallback background is not black", i)
 				}
 				if img.Bounds() != image.Rect(0, 0, 300, 300) {
@@ -383,3 +390,7 @@ func solidImage(c color.RGBA) image.Image {
 	}
 	return img
 }
+
+type failingArtworkReader struct{}
+
+func (failingArtworkReader) Read([]byte) (int, error) { return 0, io.ErrUnexpectedEOF }
