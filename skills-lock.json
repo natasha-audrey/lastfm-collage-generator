@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "skills": {
+    "domain-modeling": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "skillPath": "skills/engineering/domain-modeling/SKILL.md",
+      "computedHash": "b3eb40152b81f0c98fd2095a023c019452dbdce56f7540cc67fece2972db8369"
+    },
+    "grill-with-docs": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "skillPath": "skills/engineering/grill-with-docs/SKILL.md",
+      "computedHash": "35e62aa423aaeab6a414bcac273f56dfb17802ef2334b41b6a3b00f28196c8cf"
+    },
+    "improve-codebase-architecture": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "skillPath": "skills/engineering/improve-codebase-architecture/SKILL.md",
+      "computedHash": "ac2c94885f34ff8492dc12aa4543182f661f32ea1722b8d6b6c2c7045af33ae3"
+    },
+    "setup-matt-pocock-skills": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "skillPath": "skills/engineering/setup-matt-pocock-skills/SKILL.md",
+      "computedHash": "09f2ffc146213ba0d02f385f20e8d340ef04858ba7d90e71963fbd96fdba78d8"
+    }
+  }
+}

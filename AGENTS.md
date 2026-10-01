@@ -9,3 +9,13 @@
 ## Testing instructions
 
 - Run `go test ./...` before making commits and pushing
+
+## Agent skills
+
+### Issue tracker
+
+Issues and specs live in GitHub Issues for `natasha-audrey/lastfm-collage-generator`. See `docs/agents/issue-tracker.md`.
+
+### Domain docs
+
+Single-context layout: root `GLOSSARY.md` and `docs/adr/`. See `docs/agents/domain.md`.
