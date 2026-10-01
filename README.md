@@ -8,6 +8,7 @@ Table of Contents
   - [Generating LastFM API keys.](#generating-lastfm-api-keys)
   - [Usage](#usage)
   - [Local API server](#local-api-server)
+  - [Logging](#logging)
   - [Releases](#releases)
   - [Text rendering](#text-rendering)
   - [Example Collage](#example-collage)
@@ -43,6 +44,7 @@ Available Commands:
 
 Flags:
   -h, --help               help for lastfm-collage-generator
+      --log-level string   Logging verbosity: debug, info, warn, error (default "info")
   -p, --path string        The path the collage is written to (default "./collage.png")
   -s, --size int           Sets the size x size of the collage (3-10) (default 5)
   -t, --timeframe string   The listening period: 7day, 1month, 3month, 6month, 12month, overall (default "7day")
@@ -116,6 +118,19 @@ Errors use JSON, for example:
 - `502 upstream_error`: Last.fm data request failure.
 - `503 busy`: another generation is still running.
 - `504 timeout`: generation exceeded 60 seconds.
+
+## Logging
+
+Logs use structured text on stderr. The default `info` level shows generation
+summaries, individual artwork warnings, and server lifecycle messages.
+Credentials are redacted.
+
+Use `--log-level debug` for detailed progress with either the CLI or `serve`.
+Supported levels are `debug`, `info`, `warn`, and `error`; higher thresholds
+also suppress summaries and startup URLs.
+
+See [application logging](docs/application-logging.md) for fields, severity
+conventions, attempt IDs, and credential handling.
 
 ## Releases
 

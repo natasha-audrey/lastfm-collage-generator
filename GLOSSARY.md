@@ -14,3 +14,6 @@ _Avoid_: Date range
 **Grid size**:
 The number of rows and columns in a collage, from three to ten; a grid size of five provides twenty-five album positions.
 _Avoid_: Album count, image resolution
+
+**Artwork fallback**:
+A labeled black background used in place of unavailable or unreadable album artwork. A collage containing artwork fallbacks can still be successfully generated.

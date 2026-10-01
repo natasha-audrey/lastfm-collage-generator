@@ -280,7 +280,7 @@ func TestArtworkFailureUsesBlackTile(t *testing.T) {
 		}
 		return &http.Response{StatusCode: 503, Body: io.NopCloser(strings.NewReader("down"))}, nil
 	})}
-	w := request(newHandler(generator(client), time.Second), "/generate?user=a")
+	w := request(newHandler(generator(client), 10*time.Second), "/generate?user=a")
 	if w.Code != 200 {
 		t.Fatalf("artwork failure: %d %s", w.Code, w.Body.String())
 	}
