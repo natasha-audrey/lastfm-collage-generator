@@ -7,6 +7,7 @@ Table of Contents
   - [Environment Variables](#environment-variables)
   - [Generating LastFM API keys.](#generating-lastfm-api-keys)
   - [Usage](#usage)
+  - [Local API server](#local-api-server)
   - [Releases](#releases)
   - [Text rendering](#text-rendering)
   - [Example Collage](#example-collage)
@@ -48,6 +49,62 @@ go build
 ./lastfm-collage-generator --user tashayasha --timeframe 1month --size 5 --path ./collage.png
 ```
 
+
+## Local API server
+
+Run from the repository root with your Last.fm credentials loaded:
+
+```sh
+source .envrc
+go build
+./lastfm-collage-generator serve
+```
+
+The server listens on `127.0.0.1:8080` by default. Use `serve --listen
+127.0.0.1:9000` to choose another address. `API_KEY` must be set at startup.
+This initial server is intended for local use and has no authentication.
+The existing command without `serve` continues to generate collages as before.
+
+In another terminal, request a PNG:
+
+```sh
+curl --fail-with-body 'http://127.0.0.1:8080/generate?user=tashayasha&timeframe=7day&size=5' --output collage.png
+```
+
+`GET /generate` requires `user`. Optional `timeframe` defaults to `7day` and
+accepts `7day`, `1month`, `3month`, `6month`, `12month`, or `overall`.
+Optional `size` defaults to `5` and accepts integers from `3` to `10`.
+Unknown, duplicate, empty, or invalid parameters are rejected.
+
+Successful responses contain `image/png` with `Cache-Control: no-store`.
+The server does not save finished collages. A partially filled grid has black
+empty spaces; no albums produces an error. Missing, undecodable, or failed artwork
+downloads produce black tiles with artist and album labels. Cancellation still
+stops generation. Artwork uses the same `./generated`
+cache as the CLI. If cancellation or overlapping runs damage a cached file,
+delete it to regenerate it. Cross-process cache coordination is deferred;
+see [the cache decision](docs/adr/0001-local-server-shares-artwork-cache.md).
+
+Only one collage is generated at a time; additional valid requests receive
+`503` immediately. Generation has a 60-second deadline. Client disconnects
+cancel generation, and Ctrl+C cancels active requests and stops the server
+without waiting for them to finish.
+
+Errors use JSON, for example:
+
+```json
+{"error":{"code":"invalid_request","message":"user is required"}}
+```
+
+- `400 invalid_request`: invalid or missing query parameters.
+- `404 user_not_found`: Last.fm reports that the user does not exist.
+- `404 not_found`: unknown endpoint.
+- `405 method_not_allowed`: unsupported method; use GET.
+- `422 no_albums`: no albums in the chosen listening period.
+- `500 internal_error`: unexpected generation failure.
+- `502 upstream_error`: Last.fm data request failure.
+- `503 busy`: another generation is still running.
+- `504 timeout`: generation exceeded 60 seconds.
 
 ## Releases
 
