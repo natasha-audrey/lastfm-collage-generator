@@ -3,6 +3,13 @@
 Release notes are maintained by release-please from Conventional Commits.
 For earlier releases, see [GitHub Releases](https://github.com/natasha-audrey/lastfm-collage-generator/releases).
 
+## [0.9.0](https://github.com/natasha-audrey/lastfm-collage-generator/compare/v0.8.0...v0.9.0) (2026-10-01)
+
+
+### Features
+
+* add local collage generation server ([#86](https://github.com/natasha-audrey/lastfm-collage-generator/issues/86)) ([5e74c42](https://github.com/natasha-audrey/lastfm-collage-generator/commit/5e74c424fcdba9a1e58942635cc0fe9f5dc34b8c))
+
 ## [0.8.0](https://github.com/natasha-audrey/lastfm-collage-generator/compare/v0.7.0...v0.8.0) (2026-09-23)
 
 
