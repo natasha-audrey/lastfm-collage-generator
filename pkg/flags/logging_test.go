@@ -10,7 +10,7 @@ import (
 	"natasha-audrey/lastfm-collage-generator/pkg/logging"
 )
 
-func TestLoggingFlagAndSummary(t *testing.T) {
+func TestNewCommandContext_LoggingFlagAndSummary(t *testing.T) {
 	t.Chdir(t.TempDir())
 	for _, tc := range []struct {
 		name           string
@@ -65,7 +65,7 @@ func TestLoggingFlagAndSummary(t *testing.T) {
 	}
 }
 
-func TestServeInheritsLogLevel(t *testing.T) {
+func TestNewServeCommandContext_InheritsLogLevel(t *testing.T) {
 	var output bytes.Buffer
 	cmd := NewCommand("v1", func(*Flags) error { t.Fatal("root called"); return nil })
 	cmd.AddCommand(NewServeCommandContext(func(ctx context.Context, _ string) error {
@@ -82,7 +82,7 @@ func TestServeInheritsLogLevel(t *testing.T) {
 	}
 }
 
-func TestInvalidLogLevelSkipsGeneration(t *testing.T) {
+func TestNewCommandContext_InvalidLogLevelSkipsGeneration(t *testing.T) {
 	cmd := NewCommand("v1", func(*Flags) error { t.Fatal("generation ran"); return nil })
 	cmd.SetOut(&bytes.Buffer{})
 	cmd.SetErr(&bytes.Buffer{})

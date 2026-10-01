@@ -20,7 +20,7 @@ type loggingTransport func(*http.Request) (*http.Response, error)
 
 func (f loggingTransport) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
 
-func TestArtworkWarningsAndSuccessfulSummary(t *testing.T) {
+func TestRender_ArtworkWarningsAndSuccessfulSummary(t *testing.T) {
 	gradient, err := os.ReadFile("../../static/black-gradient.png")
 	if err != nil {
 		t.Fatal(err)

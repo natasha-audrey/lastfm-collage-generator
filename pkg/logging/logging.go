@@ -11,11 +11,13 @@ import (
 	"net/url"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
 
-var urls = regexp.MustCompile(`(?i)https?://[^\s"<>]+`)
+// Match quoted URLs first: Go errors quote invalid URLs containing spaces or quotes.
+var urls = regexp.MustCompile(`(?i)"[a-z][a-z0-9+.-]*://(?:\\.|[^"\\])*"|[a-z][a-z0-9+.-]*://[^\s"<>]+`)
 var credentials = regexp.MustCompile(`(?i)\b(api[_-]?key|shared[_-]?secret|password|access[_-]?token|token)\b["']?\s*[:=]\s*["']?[^\s&,;"']+`)
 var bearer = regexp.MustCompile(`(?i)\b(Bearer|Basic)\s+[^\s"',;]+`)
 
@@ -30,14 +32,28 @@ func credentialKey(key string) bool {
 // Sanitize removes configured secrets and credential-bearing URL components.
 func Sanitize(value string) string {
 	value = urls.ReplaceAllStringFunc(value, func(raw string) string {
+		quoted := strings.HasPrefix(raw, `"`)
+		if quoted {
+			decoded, err := strconv.Unquote(raw)
+			if err != nil {
+				return `"[redacted URL]"`
+			}
+			raw = decoded
+		}
 		u, err := url.Parse(raw)
 		if err != nil {
+			if quoted {
+				return `"[redacted URL]"`
+			}
 			return "[redacted URL]"
 		}
 		u.User = nil
 		u.RawQuery = ""
 		u.ForceQuery = false
 		u.Fragment = ""
+		if quoted {
+			return strconv.Quote(u.String())
+		}
 		return u.String()
 	})
 	value = credentials.ReplaceAllString(value, "${1}=[redacted]")

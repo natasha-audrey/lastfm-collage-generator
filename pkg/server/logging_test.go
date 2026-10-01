@@ -38,7 +38,7 @@ func loggedContext(t *testing.T, level string) (context.Context, *logBuffer) {
 	return logging.WithLogger(context.Background(), logger), buf
 }
 
-func TestRequestSummary(t *testing.T) {
+func TestServeHTTP_RequestSummary(t *testing.T) {
 	for _, tc := range []struct {
 		name, target, outcome, level string
 		status                       int
@@ -79,7 +79,7 @@ func TestRequestSummary(t *testing.T) {
 	}
 }
 
-func TestTimeoutBusyAndCleanupLogs(t *testing.T) {
+func TestServeHTTP_TimeoutBusyAndCleanupLogs(t *testing.T) {
 	ctx, buf := loggedContext(t, "debug")
 	started, release := make(chan struct{}), make(chan struct{})
 	h := newHandler(func(ctx context.Context, _ options) ([]byte, error) {
@@ -131,7 +131,7 @@ func TestTimeoutBusyAndCleanupLogs(t *testing.T) {
 	}
 }
 
-func TestCancelledSummaryOmitsStatus(t *testing.T) {
+func TestServeHTTP_CancelledSummaryOmitsStatus(t *testing.T) {
 	base, buf := loggedContext(t, "info")
 	ctx, cancel := context.WithCancel(base)
 	h := newHandler(func(ctx context.Context, _ options) ([]byte, error) { cancel(); <-ctx.Done(); return nil, ctx.Err() }, time.Second)
@@ -142,7 +142,7 @@ func TestCancelledSummaryOmitsStatus(t *testing.T) {
 	}
 }
 
-func TestUpstreamLogRedactsCredentials(t *testing.T) {
+func TestServeHTTP_UpstreamLogRedactsCredentials(t *testing.T) {
 	t.Setenv("API_KEY", "private-api-key")
 	t.Setenv("SHARED_SECRET", "private-shared-secret")
 	t.Setenv("BASE_URL", "https://upstream-user:upstream-password@example.org/?token=private-token")
@@ -164,7 +164,7 @@ func TestUpstreamLogRedactsCredentials(t *testing.T) {
 	}
 }
 
-func TestLifecycleLogsBoundPortAndFiltering(t *testing.T) {
+func TestRun_LifecycleLogsBoundPortAndFiltering(t *testing.T) {
 	t.Setenv("API_KEY", "lifecycle-key")
 	t.Chdir(t.TempDir())
 	for _, level := range []string{"info", "error"} {

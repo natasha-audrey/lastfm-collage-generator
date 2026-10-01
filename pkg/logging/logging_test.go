@@ -10,7 +10,7 @@ import (
 	"testing"
 )
 
-func TestCredentialSanitization(t *testing.T) {
+func TestNew_CredentialSanitization(t *testing.T) {
 	t.Setenv("API_KEY", "key +/&value")
 	t.Setenv("SHARED_SECRET", "shared-secret-value")
 	var buf bytes.Buffer
@@ -33,7 +33,7 @@ func TestCredentialSanitization(t *testing.T) {
 	}
 }
 
-func TestAttemptLevelsAndCorrelation(t *testing.T) {
+func TestStart_LevelsAndCorrelation(t *testing.T) {
 	for _, level := range []string{"debug", "info", "warn", "error"} {
 		t.Run(level, func(t *testing.T) {
 			var buf bytes.Buffer
@@ -76,7 +76,7 @@ func TestAttemptLevelsAndCorrelation(t *testing.T) {
 	}
 }
 
-func TestInvalidLevel(t *testing.T) {
+func TestNew_InvalidLevel(t *testing.T) {
 	for _, level := range []string{"", "verbose", "INFO"} {
 		if _, err := New(&bytes.Buffer{}, level); err == nil {
 			t.Fatalf("accepted %q", level)

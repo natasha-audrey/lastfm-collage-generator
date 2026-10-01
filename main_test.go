@@ -34,6 +34,37 @@ func cachedCLIAlbum(t *testing.T) {
 
 const cachedAlbumResponse = `{"topalbums":{"album":[{"name":"Album","artist":{"name":"Artist"},"image":[{"#text":"https://example.org/art.png"}]}]}}`
 
+func TestGenerateCollageContext_RedactsInvalidUpstreamURLs(t *testing.T) {
+	t.Setenv("API_KEY", "test-api-key")
+	for _, tc := range []struct {
+		name, address, diagnostic string
+	}{
+		{"unsupported scheme", "ftp://service:private-password@example.org/?signature=private-signature", "unsupported protocol scheme"},
+		{"invalid userinfo", "https://service:private password-suffix@example.org/", "invalid userinfo"},
+		{"quoted userinfo", "https://service:private\"password-suffix@example.org/", "invalid userinfo"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv("BASE_URL", tc.address)
+			var stderr bytes.Buffer
+			cmd := flags.NewCommandContext("v1", generateCollageContext)
+			cmd.SetErr(&stderr)
+			cmd.SetArgs([]string{"--log-level", "debug"})
+			if err := cmd.Execute(); err == nil || !logging.IsReported(err) {
+				t.Fatal("expected a reported upstream error")
+			}
+			output := stderr.String()
+			for _, secret := range []string{"service", "private-password", "private-signature", "password-suffix", "test-api-key"} {
+				if strings.Contains(output, secret) {
+					t.Error("configured URL credential leaked")
+				}
+			}
+			if !strings.Contains(output, tc.diagnostic) || !strings.Contains(output, "outcome=upstream_error") || strings.Count(output, "Generation completed") != 1 {
+				t.Error("expected one upstream summary preserving the diagnostic")
+			}
+		})
+	}
+}
+
 func TestGenerateCollageReturnsRenderingError(t *testing.T) {
 	cachedCLIAlbum(t)
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -50,7 +81,7 @@ func TestGenerateCollageReturnsRenderingError(t *testing.T) {
 	}
 }
 
-func TestCLIEndToEndLogging(t *testing.T) {
+func TestGenerateCollageContext_EndToEndLogging(t *testing.T) {
 	cachedCLIAlbum(t)
 	t.Setenv("API_KEY", "cli-private-key")
 	for _, tc := range []struct {
