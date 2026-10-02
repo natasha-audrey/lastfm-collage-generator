@@ -3,6 +3,13 @@
 Release notes are maintained by release-please from Conventional Commits.
 For earlier releases, see [GitHub Releases](https://github.com/natasha-audrey/lastfm-collage-generator/releases).
 
+## [0.10.1](https://github.com/natasha-audrey/lastfm-collage-generator/compare/v0.10.0...v0.10.1) (2026-10-02)
+
+
+### Bug Fixes
+
+* make cli output when starting work ([#99](https://github.com/natasha-audrey/lastfm-collage-generator/issues/99)) ([3488660](https://github.com/natasha-audrey/lastfm-collage-generator/commit/34886601e10f059f159ec3c837706ff7adbb3fa2))
+
 ## [0.10.0](https://github.com/natasha-audrey/lastfm-collage-generator/compare/v0.9.0...v0.10.0) (2026-10-02)
 
 
