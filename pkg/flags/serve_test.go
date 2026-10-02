@@ -2,7 +2,11 @@ package flags
 
 import (
 	"bytes"
+	"context"
+	"strings"
 	"testing"
+
+	"natasha-audrey/lastfm-collage-generator/pkg/logging"
 )
 
 func TestServeCommand(t *testing.T) {
@@ -25,5 +29,22 @@ func TestServeCommand(t *testing.T) {
 		if called != tc.want {
 			t.Fatalf("address %q want %q", called, tc.want)
 		}
+	}
+}
+
+func TestNewServeCommandContext_InheritsLogLevel(t *testing.T) {
+	var output bytes.Buffer
+	cmd := NewCommand("v1", func(*Flags) error { t.Fatal("root called"); return nil })
+	cmd.AddCommand(NewServeCommandContext(func(ctx context.Context, _ string) error {
+		logging.FromContext(ctx).DebugContext(ctx, "Server progress")
+		return nil
+	}))
+	cmd.SetErr(&output)
+	cmd.SetArgs([]string{"serve", "--log-level", "debug"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(output.String(), "Server progress") {
+		t.Fatal(output.String())
 	}
 }
