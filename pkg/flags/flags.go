@@ -2,8 +2,10 @@
 package flags
 
 import (
+	"context"
 	"fmt"
 	"natasha-audrey/lastfm-collage-generator/pkg/config/timeframe"
+	"natasha-audrey/lastfm-collage-generator/pkg/logging"
 
 	"github.com/spf13/cobra"
 )
@@ -23,16 +25,52 @@ type Flags struct {
 // NewCommand builds the CLI and calls run with validated collage options.
 // Help and version requests skip validation and collage generation.
 func NewCommand(version string, run func(*Flags) error) *cobra.Command {
+	return NewCommandContext(version, func(_ context.Context, f *Flags) error { return run(f) })
+}
+
+// NewCommandContext carries the configured attempt logger into generation.
+func NewCommandContext(version string, run func(context.Context, *Flags) error) *cobra.Command {
 	options := &Flags{}
+	var logLevel string
 	var period string
+	reject := func(cmd *cobra.Command, err error) error {
+		logger, configErr := logging.New(cmd.ErrOrStderr(), logLevel)
+		if configErr != nil {
+			return configErr
+		}
+		_, finish := logging.Start(logging.WithLogger(cmd.Context(), logger), "cli")
+		finish("invalid_request", err)
+		cmd.SilenceUsage = true
+		return logging.Reported(err)
+	}
 	cmd := &cobra.Command{
-		Use:           "lastfm-collage-generator",
-		Short:         "Generate a collage of your top Last.fm albums",
-		Version:       version,
-		Args:          cobra.NoArgs,
+		Use:     "lastfm-collage-generator",
+		Short:   "Generate a collage of your top Last.fm albums",
+		Version: version,
+		Args: func(cmd *cobra.Command, args []string) error {
+			if err := cobra.NoArgs(cmd, args); err != nil {
+				return reject(cmd, err)
+			}
+			return nil
+		},
 		SilenceErrors: true,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			var err error
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			cmd.SilenceUsage = true
+			logger, err := logging.New(cmd.ErrOrStderr(), logLevel)
+			if err != nil {
+				return err
+			}
+			cmd.SetContext(logging.WithLogger(cmd.Context(), logger))
+			return nil
+		},
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			cmd.SilenceUsage = true
+			ctx, finish := logging.Start(cmd.Context(), "cli")
+			outcome := "invalid_request"
+			defer func() {
+				finish(outcome, err, "user", options.User, "listening_period", period, "grid_size", options.Size)
+				err = logging.Reported(err)
+			}()
 			options.Time, err = timeframe.ParseString(period)
 			if err != nil {
 				return err
@@ -48,9 +86,13 @@ func NewCommand(version string, run func(*Flags) error) *cobra.Command {
 				options.User = "tashayasha"
 			}
 			cmd.SilenceUsage = true
-			return run(options)
+			err = run(ctx, options)
+			outcome = logging.Outcome(err)
+			return err
 		},
 	}
+	cmd.SetFlagErrorFunc(reject)
+	cmd.PersistentFlags().StringVar(&logLevel, "log-level", "info", "Logging verbosity: debug, info, warn, error")
 	cmd.SetVersionTemplate("{{.Version}}\n")
 	cmd.Flags().StringVarP(&options.User, "user", "u", "tashayasha", "The user to query")
 	cmd.Flags().StringVarP(&period, "timeframe", "t", "7day", "The listening period: 7day, 1month, 3month, 6month, 12month, overall")

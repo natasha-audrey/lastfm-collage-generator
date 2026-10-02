@@ -10,7 +10,7 @@ import (
 
 	"image/png"
 	"io"
-	"log/slog"
+	"natasha-audrey/lastfm-collage-generator/pkg/logging"
 	"natasha-audrey/lastfm-collage-generator/pkg/model"
 	"net/http"
 	"os"
@@ -59,8 +59,8 @@ func downloadImagesContext(ctx context.Context, client *http.Client, albums []mo
 		}
 		var download *DownloadError
 		if errors.As(err, &download) {
-			slog.Info("Artwork download failed; using a black background", "album", album.Name)
-			_, err = addText(album, []string{album.Artist, album.Name}, nil)
+			artworkWarning(ctx, album, "download_failed", err)
+			_, err = addTextContext(ctx, album, []string{album.Artist, album.Name}, nil)
 		}
 		if err != nil {
 			return err
@@ -71,14 +71,17 @@ func downloadImagesContext(ctx context.Context, client *http.Client, albums []mo
 
 func prepareAlbum(ctx context.Context, client *http.Client, album model.Album) error {
 	if album.Image == "" {
-		_, err := addText(album, []string{album.Artist, album.Name}, nil)
+		artworkWarning(ctx, album, "missing_url", nil)
+		_, err := addTextContext(ctx, album, []string{album.Artist, album.Name}, nil)
 		return err
 	}
 	if _, err := os.Stat(album.LocalImage + ".png"); err == nil {
+		logging.FromContext(ctx).DebugContext(ctx, "Artwork cache hit", "album", album.Name, "artist", album.Artist)
 		return nil
 	} else if !os.IsNotExist(err) {
 		return err
 	}
+	logging.FromContext(ctx).DebugContext(ctx, "Downloading artwork", "album", album.Name, "artist", album.Artist)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, album.Image, nil)
 	if err != nil {
 		return &DownloadError{err}
@@ -91,7 +94,7 @@ func prepareAlbum(ctx context.Context, client *http.Client, album model.Album) e
 		response.Body.Close()
 		return &DownloadError{fmt.Errorf("artwork status %d", response.StatusCode)}
 	}
-	_, err = addText(album, []string{album.Artist, album.Name}, artworkBody{response.Body})
+	_, err = addTextContext(ctx, album, []string{album.Artist, album.Name}, artworkBody{response.Body})
 	closeErr := response.Body.Close()
 	if err != nil {
 		return err
@@ -116,6 +119,18 @@ func drawGradient(dst *image.RGBA) error {
 func addText(album model.Album, labels []string,
 	body io.ReadCloser) (string, error) {
 
+	return addTextContext(context.Background(), album, labels, body)
+}
+
+func artworkWarning(ctx context.Context, album model.Album, reason string, err error) {
+	args := []any{"album", album.Name, "artist", album.Artist, "reason", reason}
+	if err != nil {
+		args = append(args, "error", err)
+	}
+	logging.FromContext(ctx).WarnContext(ctx, "Artwork fallback", args...)
+}
+
+func addTextContext(ctx context.Context, album model.Album, labels []string, body io.ReadCloser) (string, error) {
 	outFile, err := os.Create(album.LocalImage + ".png")
 	if err != nil {
 		return "", err
@@ -136,7 +151,7 @@ func addText(album model.Album, labels []string,
 		bg = albumImage
 		if err != nil {
 			bg = nil
-			slog.Info("Ran into problem decoding, using a black background image", album.LocalImage, err)
+			artworkWarning(ctx, album, "decode_failed", err)
 		}
 	}
 	// Uniform black has effectively infinite bounds, so size the fallback explicitly.
@@ -231,9 +246,14 @@ func composeCollage(albums []model.Album, size int, load func(model.Album) (imag
 // with unused space filled black; artwork is not resized. Size must be positive.
 // It returns the saved image, or an error from preparation, composition, or saving.
 func (c Collage) MakeCollage(albums []model.Album, size int, name string) (image.Image, error) {
+	return c.MakeCollageContext(context.Background(), albums, size, name)
+}
+
+// MakeCollageContext carries cancellation and attempt logging through collage generation.
+func (c Collage) MakeCollageContext(ctx context.Context, albums []model.Album, size int, name string) (image.Image, error) {
 	prepare := c.Prepare
 	if prepare == nil {
-		prepare = downloadImages
+		prepare = func(albums []model.Album) error { return downloadImagesContext(ctx, http.DefaultClient, albums) }
 	}
 	load := c.Load
 	if load == nil {
@@ -244,14 +264,22 @@ func (c Collage) MakeCollage(albums []model.Album, size int, name string) (image
 		save = saveCollage
 	}
 
-	if err := prepare(albums); err != nil {
-		return nil, err
-	}
-	result, err := composeCollage(albums, size, load)
+	done := logging.Stage(ctx, "artwork_preparation")
+	err := prepare(albums)
+	done()
 	if err != nil {
 		return nil, err
 	}
-	if err := save(name, result); err != nil {
+	done = logging.Stage(ctx, "composition")
+	result, err := composeCollage(albums, size, load)
+	done()
+	if err != nil {
+		return nil, err
+	}
+	done = logging.Stage(ctx, "png_writing")
+	err = save(name, result)
+	done()
+	if err != nil {
 		return nil, err
 	}
 	return result, nil
@@ -264,9 +292,14 @@ func Render(ctx context.Context, client *http.Client, albums []model.Album, size
 	if len(albums) > size*size && size > 0 {
 		albums = albums[:size*size]
 	}
-	if err := downloadImagesContext(ctx, client, albums); err != nil {
+	done := logging.Stage(ctx, "artwork_preparation")
+	err := downloadImagesContext(ctx, client, albums)
+	done()
+	if err != nil {
 		return nil, err
 	}
+	done = logging.Stage(ctx, "composition")
+	defer done()
 	return composeCollage(albums, size, func(album model.Album) (image.Image, error) {
 		if err := ctx.Err(); err != nil {
 			return nil, err
