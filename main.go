@@ -64,6 +64,7 @@ func main() {
 		if err := os.MkdirAll(filepath.Join(".", "generated"), os.ModePerm); err != nil {
 			return err
 		}
+		logging.FromContext(ctx).Info("starting collage generation")
 		return generateCollageContext(ctx, options)
 	})
 	cmd.AddCommand(flags.NewServeCommandContext(func(parent context.Context, address string) error {
