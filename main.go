@@ -21,7 +21,7 @@ import (
 )
 
 // version is the CLI release version, maintained by release-please.
-const version = "v0.9.0" // x-release-please-version
+const version = "v0.10.0" // x-release-please-version
 
 func generateCollage(f *flags.Flags) error {
 	return generateCollageContext(context.Background(), f)
