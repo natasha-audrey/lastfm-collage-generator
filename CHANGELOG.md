@@ -3,6 +3,18 @@
 Release notes are maintained by release-please from Conventional Commits.
 For earlier releases, see [GitHub Releases](https://github.com/natasha-audrey/lastfm-collage-generator/releases).
 
+## [0.10.0](https://github.com/natasha-audrey/lastfm-collage-generator/compare/v0.9.0...v0.10.0) (2026-10-02)
+
+
+### Features
+
+* add consistent application logging ([#98](https://github.com/natasha-audrey/lastfm-collage-generator/issues/98)) ([e68c19b](https://github.com/natasha-audrey/lastfm-collage-generator/commit/e68c19b5d969f4e717902bec14b5fa3d6bbcda85))
+
+
+### Bug Fixes
+
+* print local server URL on startup ([#95](https://github.com/natasha-audrey/lastfm-collage-generator/issues/95)) ([3b0ee20](https://github.com/natasha-audrey/lastfm-collage-generator/commit/3b0ee20d9fbd4b882169607d1ee68ff292d35908))
+
 ## [0.9.0](https://github.com/natasha-audrey/lastfm-collage-generator/compare/v0.8.0...v0.9.0) (2026-10-01)
 
 
