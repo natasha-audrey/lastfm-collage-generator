@@ -17,7 +17,7 @@ import (
 	"natasha-audrey/lastfm-collage-generator/pkg/config/timeframe"
 )
 
-func TestContractDecoderParsing(t *testing.T) {
+func TestDecodeOptions_Parsing(t *testing.T) {
 	for _, tc := range []struct {
 		query string
 		want  options
@@ -45,7 +45,7 @@ func TestContractDecoderParsing(t *testing.T) {
 	}
 }
 
-func TestGenerationContract(t *testing.T) {
+func TestServeHTTP_GenerationContract(t *testing.T) {
 	doc, err := openapi3.NewLoader().LoadFromData(specification)
 	if err != nil {
 		t.Fatal(err)

@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-func TestSpecificationFreshness(t *testing.T) {
+func TestGenerateSpec_Freshness(t *testing.T) {
 	t.Setenv("API_KEY", "")
 	first, err := GenerateSpec()
 	if err != nil {
@@ -29,7 +29,7 @@ func TestSpecificationFreshness(t *testing.T) {
 	}
 }
 
-func TestDocumentationWhileBusy(t *testing.T) {
+func TestServeHTTP_DocumentationWhileBusy(t *testing.T) {
 	started, release := make(chan struct{}), make(chan struct{})
 	h := newHandler(func(context.Context, options) ([]byte, error) {
 		close(started)
