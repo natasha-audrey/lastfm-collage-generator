@@ -109,7 +109,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		writeError(w, code, name, message)
 	}
 	w.Header().Set("Cache-Control", "no-store")
-	if r.URL.Path != "/generate" {
+	if r.URL.Path != "/v1/generate" {
 		fail(404, "not_found", "endpoint not found")
 		return
 	}
