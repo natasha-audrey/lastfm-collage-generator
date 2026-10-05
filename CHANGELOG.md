@@ -3,6 +3,17 @@
 Release notes are maintained by release-please from Conventional Commits.
 For earlier releases, see [GitHub Releases](https://github.com/natasha-audrey/lastfm-collage-generator/releases).
 
+## [1.0.0](https://github.com/natasha-audrey/lastfm-collage-generator/compare/v0.10.1...v1.0.0) (2026-10-05)
+
+
+### ⚠ BREAKING CHANGES
+
+* **api:** GET /generate is removed. Clients must use GET /v1/generate.
+
+### Features
+
+* **api:** move generation to the v1 endpoint ([#101](https://github.com/natasha-audrey/lastfm-collage-generator/issues/101)) ([58ee614](https://github.com/natasha-audrey/lastfm-collage-generator/commit/58ee614826d1cb5c818a26507c51faf1213bd6a4))
+
 ## [0.10.1](https://github.com/natasha-audrey/lastfm-collage-generator/compare/v0.10.0...v0.10.1) (2026-10-02)
 
 
