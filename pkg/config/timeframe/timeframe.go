@@ -24,14 +24,13 @@ const (
 	Overall // overall
 )
 
-var timeFrameMap = map[string]TimeFrame{
-	"7day":    Week,
-	"1month":  Month,
-	"3month":  ThreeMonth,
-	"6month":  SixMonth,
-	"12month": Year,
-	"overall": Overall,
-}
+var timeFrameMap = func() map[string]TimeFrame {
+	periods := make(map[string]TimeFrame)
+	for _, period := range Values() {
+		periods[period.String()] = period
+	}
+	return periods
+}()
 
 // ParseString parses a case-sensitive Last.fm period: 7day, 1month, 3month,
 // 6month, 12month, or overall. It returns an error for any other value.
@@ -41,4 +40,9 @@ func ParseString(str string) (TimeFrame, error) {
 		return t, fmt.Errorf("%s invaild string", str)
 	}
 	return t, nil
+}
+
+// Values returns the supported listening periods in declaration order.
+func Values() []TimeFrame {
+	return []TimeFrame{Week, Month, ThreeMonth, SixMonth, Year, Overall}
 }
