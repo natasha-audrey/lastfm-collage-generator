@@ -3,6 +3,13 @@
 Release notes are maintained by release-please from Conventional Commits.
 For earlier releases, see [GitHub Releases](https://github.com/natasha-audrey/lastfm-collage-generator/releases).
 
+## [1.1.0](https://github.com/natasha-audrey/lastfm-collage-generator/compare/v1.0.0...v1.1.0) (2026-10-05)
+
+
+### Features
+
+* **api:** share HTTP contract and serve versioned OpenAPI docs ([#104](https://github.com/natasha-audrey/lastfm-collage-generator/issues/104)) ([8e9be3b](https://github.com/natasha-audrey/lastfm-collage-generator/commit/8e9be3b27b922c539f1b72e6f9286217a42fdc1a))
+
 ## [1.0.0](https://github.com/natasha-audrey/lastfm-collage-generator/compare/v0.10.1...v1.0.0) (2026-10-05)
 
 
