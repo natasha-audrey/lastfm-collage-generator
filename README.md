@@ -81,10 +81,10 @@ The existing command without `serve` continues to generate collages as before.
 In another terminal, request a PNG:
 
 ```sh
-curl --fail-with-body 'http://127.0.0.1:8080/generate?user=tashayasha&timeframe=7day&size=5' --output collage.png
+curl --fail-with-body 'http://127.0.0.1:8080/v1/generate?user=tashayasha&timeframe=7day&size=5' --output collage.png
 ```
 
-`GET /generate` requires `user`. Optional `timeframe` defaults to `7day` and
+`GET /v1/generate` requires `user`. Optional `timeframe` defaults to `7day` and
 accepts `7day`, `1month`, `3month`, `6month`, `12month`, or `overall`.
 Optional `size` defaults to `5` and accepts integers from `3` to `10`.
 Unknown, duplicate, empty, or invalid parameters are rejected.

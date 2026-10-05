@@ -34,7 +34,7 @@ func TestValidation(t *testing.T) {
 	h := newHandler(func(context.Context, options) ([]byte, error) { t.Fatal("generated invalid request"); return nil, nil }, time.Second)
 	for _, query := range []string{"", "user=", "user=%20", "user=a&size=2", "user=a&size=11", "user=a&size=x", "user=a&size=", "user=a&timeframe=", "user=a&timeframe=no", "user=a&user=b", "user=a&size=5&size=5", "user=a&path=foo", "user=%zz", "user=a;size=5"} {
 		t.Run(query, func(t *testing.T) {
-			w := request(h, "/generate?"+query)
+			w := request(h, "/v1/generate?"+query)
 			if w.Code != 400 {
 				t.Fatalf("status %d: %s", w.Code, w.Body.String())
 			}
@@ -45,12 +45,14 @@ func TestValidation(t *testing.T) {
 		})
 	}
 	w := httptest.NewRecorder()
-	h.ServeHTTP(w, httptest.NewRequest("POST", "/generate?user=a", nil))
+	h.ServeHTTP(w, httptest.NewRequest("POST", "/v1/generate?user=a", nil))
 	if w.Code != 405 || w.Header().Get("Allow") != "GET" {
 		t.Fatalf("method response: %v", w)
 	}
-	if w := request(h, "/other"); w.Code != 404 {
-		t.Fatalf("route status %d", w.Code)
+	for _, path := range []string{"/other", "/generate?user=a", "/v1/generate/"} {
+		if w := request(h, path); w.Code != 404 {
+			t.Fatalf("route %q status %d", path, w.Code)
+		}
 	}
 }
 
@@ -70,7 +72,7 @@ func TestOptionsAndPNG(t *testing.T) {
 			_ = png.Encode(&buf, image.NewRGBA(image.Rect(0, 0, 1, 1)))
 			return buf.Bytes(), nil
 		}, time.Second)
-		w := request(h, "/generate?"+tc.query)
+		w := request(h, "/v1/generate?"+tc.query)
 		if w.Code != 200 || w.Header().Get("Content-Type") != "image/png" || w.Header().Get("Cache-Control") != "no-store" {
 			t.Fatalf("response: %v", w)
 		}
@@ -92,9 +94,9 @@ func TestBusyAndDeadline(t *testing.T) {
 		return nil, ctx.Err()
 	}, 100*time.Millisecond)
 	finished := make(chan *httptest.ResponseRecorder, 1)
-	go func() { finished <- request(h, "/generate?user=a") }()
+	go func() { finished <- request(h, "/v1/generate?user=a") }()
 	<-started
-	if w := request(h, "/generate?user=b"); w.Code != 503 {
+	if w := request(h, "/v1/generate?user=b"); w.Code != 503 {
 		t.Fatalf("busy status %d", w.Code)
 	}
 	select {
@@ -106,7 +108,7 @@ func TestBusyAndDeadline(t *testing.T) {
 		t.Fatal("deadline did not respond")
 	}
 	<-cancelled
-	if w := request(h, "/generate?user=b"); w.Code != 503 {
+	if w := request(h, "/v1/generate?user=b"); w.Code != 503 {
 		t.Fatalf("slot released before generation stopped: %d", w.Code)
 	}
 }
@@ -123,7 +125,7 @@ func TestDisconnectCancelsGeneration(t *testing.T) {
 	defer cancel()
 	finished := make(chan struct{})
 	go func() {
-		h.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/generate?user=a", nil).WithContext(ctx))
+		h.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/v1/generate?user=a", nil).WithContext(ctx))
 		close(finished)
 	}()
 	<-started
@@ -159,7 +161,7 @@ func TestUpstreamFailures(t *testing.T) {
 			client := &http.Client{Transport: transportFunc(func(r *http.Request) (*http.Response, error) {
 				return &http.Response{StatusCode: tc.status, Body: io.NopCloser(strings.NewReader(tc.body)), Header: make(http.Header)}, nil
 			})}
-			w := request(newHandler(generator(client), time.Second), "/generate?user=a")
+			w := request(newHandler(generator(client), time.Second), "/v1/generate?user=a")
 			if w.Code != tc.want {
 				t.Fatalf("status %d want %d: %s", w.Code, tc.want, w.Body.String())
 			}
@@ -169,7 +171,7 @@ func TestUpstreamFailures(t *testing.T) {
 		})
 	}
 	h := newHandler(func(context.Context, options) ([]byte, error) { return nil, errors.New("/private/file: test-secret") }, time.Second)
-	if w := request(h, "/generate?user=a"); w.Code != 500 || strings.Contains(w.Body.String(), "private") {
+	if w := request(h, "/v1/generate?user=a"); w.Code != 500 || strings.Contains(w.Body.String(), "private") {
 		t.Fatalf("internal error response %v", w)
 	}
 }
@@ -196,7 +198,7 @@ func TestGeneratorUsesCacheWithoutSavingCollage(t *testing.T) {
 		}
 		return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(`{"topalbums":{"album":[{"name":"Album","artist":{"name":"Artist"},"image":[{"#text":"https://example.test/art.png"}]}]}}`))}, nil
 	})}
-	w := request(newHandler(generator(client), time.Second), "/generate?user=a&size=3")
+	w := request(newHandler(generator(client), time.Second), "/v1/generate?user=a&size=3")
 	if w.Code != 200 {
 		t.Fatalf("status %d: %s", w.Code, w.Body.String())
 	}
@@ -284,7 +286,7 @@ func TestArtworkFailureUsesBlackTile(t *testing.T) {
 		}
 		return &http.Response{StatusCode: 503, Body: io.NopCloser(strings.NewReader("down"))}, nil
 	})}
-	w := request(newHandler(generator(client), 10*time.Second), "/generate?user=a")
+	w := request(newHandler(generator(client), 10*time.Second), "/v1/generate?user=a")
 	if w.Code != 200 {
 		t.Fatalf("artwork failure: %d %s", w.Code, w.Body.String())
 	}
@@ -358,13 +360,13 @@ func TestServeHTTP_RequestSummary(t *testing.T) {
 		err                          error
 		panicValue                   bool
 	}{
-		{"success", "/generate?user=listener", "success", "INFO", 200, nil, false},
-		{"validation", "/generate?size=2", "invalid_request", "INFO", 400, nil, false},
-		{"unknown user", "/generate?user=a", "user_not_found", "INFO", 404, &apiError{404, "user_not_found", "unknown user"}, false},
-		{"empty", "/generate?user=a", "no_albums", "INFO", 422, &apiError{422, "no_albums", "no albums"}, false},
-		{"upstream", "/generate?user=a", "upstream_error", "ERROR", 502, errors.Join(&apiError{502, "upstream_error", "upstream failed"}, errors.New("network unavailable")), false},
-		{"internal", "/generate?user=a", "internal_error", "ERROR", 500, errors.New("disk failure"), false},
-		{"panic", "/generate?user=a", "internal_error", "ERROR", 500, nil, true},
+		{"success", "/v1/generate?user=listener", "success", "INFO", 200, nil, false},
+		{"validation", "/v1/generate?size=2", "invalid_request", "INFO", 400, nil, false},
+		{"unknown user", "/v1/generate?user=a", "user_not_found", "INFO", 404, &apiError{404, "user_not_found", "unknown user"}, false},
+		{"empty", "/v1/generate?user=a", "no_albums", "INFO", 422, &apiError{422, "no_albums", "no albums"}, false},
+		{"upstream", "/v1/generate?user=a", "upstream_error", "ERROR", 502, errors.Join(&apiError{502, "upstream_error", "upstream failed"}, errors.New("network unavailable")), false},
+		{"internal", "/v1/generate?user=a", "internal_error", "ERROR", 500, errors.New("disk failure"), false},
+		{"panic", "/v1/generate?user=a", "internal_error", "ERROR", 500, nil, true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx, buf := loggedContext(t, "info")
@@ -403,10 +405,10 @@ func TestServeHTTP_TimeoutBusyAndCleanupLogs(t *testing.T) {
 	finished := make(chan struct{})
 	go func() {
 		defer close(finished)
-		h.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/generate?user=a", nil).WithContext(ctx))
+		h.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/v1/generate?user=a", nil).WithContext(ctx))
 	}()
 	<-started
-	h.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/generate?user=b", nil).WithContext(ctx))
+	h.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/v1/generate?user=b", nil).WithContext(ctx))
 	<-finished
 	output := buf.String()
 	for _, field := range []string{"outcome=timeout", "status=504", "outcome=busy", "status=503"} {
@@ -448,7 +450,7 @@ func TestServeHTTP_CancelledSummaryOmitsStatus(t *testing.T) {
 	base, buf := loggedContext(t, "info")
 	ctx, cancel := context.WithCancel(base)
 	h := newHandler(func(ctx context.Context, _ options) ([]byte, error) { cancel(); <-ctx.Done(); return nil, ctx.Err() }, time.Second)
-	h.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/generate?user=a", nil).WithContext(ctx))
+	h.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/v1/generate?user=a", nil).WithContext(ctx))
 	output := buf.String()
 	if !strings.Contains(output, "outcome=cancelled") || !strings.Contains(output, "level=INFO") || strings.Contains(output, "status=") || strings.Count(output, "Generation completed") != 1 {
 		t.Fatal(output)
@@ -465,7 +467,7 @@ func TestServeHTTP_UpstreamLogRedactsCredentials(t *testing.T) {
 	})}
 	h := newHandler(generator(client), time.Second)
 	w := httptest.NewRecorder()
-	h.ServeHTTP(w, httptest.NewRequest("GET", "/generate?user=listener", nil).WithContext(ctx))
+	h.ServeHTTP(w, httptest.NewRequest("GET", "/v1/generate?user=listener", nil).WithContext(ctx))
 	output := buf.String()
 	for _, secret := range []string{"private-api-key", "private-shared-secret", "upstream-password", "private-token", "upstream-user"} {
 		if strings.Contains(output, secret) {
