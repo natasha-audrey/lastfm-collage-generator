@@ -1,0 +1,13 @@
+# Share HTTP contract declarations with the server
+
+API documentation and contract tests are the initial goals for generating an OpenAPI specification; generated clients are deferred. Keep the existing `net/http` server design and use shared typed declarations for the server and specification rather than maintaining a separate contract in documentation annotations. Share parameter names, defaults, listening-period values, and grid-size bounds with runtime decoding and validation, while preserving custom parsing rules. This reduces opportunities for drift, at the cost of refactoring the HTTP boundary.
+
+Initially, add contract checks only for successful requests and PNG responses, retaining the existing behavior tests. Expand contract coverage if the project becomes more complicated. Check in the generated specification and check its freshness in CI, and expose it at `/openapi.json` with browser documentation at `/docs`. Specification generation must work without Last.fm credentials or starting the server.
+
+Use `swaggest/openapi-go` for specification generation, standalone decoding and validation components from `swaggest/rest`, and `kin-openapi` for independent contract checks, subject to a compatibility check for defaults, custom parsing, and binary PNG responses. Embed the documentation UI assets so local docs work offline. The initial contract tests cover defaults and explicit optional parameter values with stubbed generation, validating requests against the specification, successful status and documented headers, and PNG decoding.
+
+Generate OpenAPI 3.0.3 JSON. Document the full existing generation contract, including error responses, while limiting new contract tests to success. Describe custom parsing, busy behavior, and timeout in prose where needed. Documentation endpoints must remain available while generation is busy.
+
+Source inspection supports this approach but does not replace testing pinned releases. Preserve strict `url.ParseQuery` error handling, duplicate rejection, whitespace trimming, and the distinction between omitted and explicitly empty parameters when integrating the decoder. Keep the listening-period enumeration shared with the existing timeframe package. Configure contract validation to reject undocumented response statuses, and decode PNG bytes explicitly because binary schema validation does not verify image integrity.
+
+Generate one deterministic artifact in the server package, embed it for `/openapi.json`, and have the offline UI read that endpoint. CI regenerates the artifact and fails on a difference; normal contract tests validate the checked-in document. Verify compatibility of pinned library releases before refactoring, then run the existing server tests and `go test ./...`.
