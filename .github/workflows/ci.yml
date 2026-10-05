@@ -22,6 +22,10 @@ jobs:
       - name: Build Executable
         run: |
           go build
+      - name: Check OpenAPI freshness
+        run: |
+          go generate ./pkg/server
+          git diff --exit-code -- pkg/server/openapi.json
       - name: Run Tests
         run: |
           go test ./...

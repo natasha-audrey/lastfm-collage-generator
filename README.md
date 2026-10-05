@@ -78,6 +78,10 @@ The server listens on `127.0.0.1:8080` by default. Use `serve --listen
 This initial server is intended for local use and has no authentication.
 The existing command without `serve` continues to generate collages as before.
 
+Browse the API documentation at `http://127.0.0.1:8080/v1/docs` or retrieve
+its OpenAPI 3.0.3 JSON at `/v1/openapi.json`. Regenerate the checked-in
+specification with `go generate ./pkg/server`.
+
 In another terminal, request a PNG:
 
 ```sh

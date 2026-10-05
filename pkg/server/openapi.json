@@ -1,0 +1,316 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Last.fm collage generator",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/v1/generate": {
+      "get": {
+        "summary": "Generate a PNG collage of a user's top albums",
+        "description": "Unknown and duplicate query parameters are rejected, as are malformed URL escapes and unescaped semicolons. Defaults apply only to omitted parameters. Only one generation runs at a time; concurrent requests receive 503. Generation has a 60-second deadline; after a timeout the slot remains busy until the worker exits. A disconnected client cancels generation. Documentation endpoints remain available while generation is busy.",
+        "operationId": "generateCollage",
+        "parameters": [
+          {
+            "name": "user",
+            "in": "query",
+            "description": "Last.fm username. Leading and trailing whitespace is trimmed; a blank username is rejected.",
+            "required": true,
+            "schema": {
+              "minLength": 1,
+              "type": "string",
+              "description": "Last.fm username. Leading and trailing whitespace is trimmed; a blank username is rejected."
+            }
+          },
+          {
+            "name": "timeframe",
+            "in": "query",
+            "description": "Case-sensitive Last.fm listening period. An explicitly empty value is rejected.",
+            "schema": {
+              "$ref": "#/components/schemas/ServerListeningPeriod"
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "description": "Square grid side length. Parsed as a base-10 integer (a leading sign and zeros are accepted); whitespace and explicitly empty values are rejected.",
+            "schema": {
+              "$ref": "#/components/schemas/ServerGridSize"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PNG collage. Each grid cell is 300 × 300 pixels; unavailable artwork uses a black tile and unused cells remain black.",
+            "headers": {
+              "Cache-Control": {
+                "style": "simple",
+                "required": true,
+                "schema": {
+                  "enum": [
+                    "no-store"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request: missing or invalid query parameters",
+            "headers": {
+              "Cache-Control": {
+                "style": "simple",
+                "required": true,
+                "schema": {
+                  "enum": [
+                    "no-store"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerErrorHTTPResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "user_not_found: Last.fm user not found",
+            "headers": {
+              "Cache-Control": {
+                "style": "simple",
+                "required": true,
+                "schema": {
+                  "enum": [
+                    "no-store"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerErrorHTTPResponse"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "method_not_allowed: use GET; the Allow header is GET",
+            "headers": {
+              "Allow": {
+                "style": "simple",
+                "required": true,
+                "schema": {
+                  "enum": [
+                    "GET"
+                  ],
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "style": "simple",
+                "required": true,
+                "schema": {
+                  "enum": [
+                    "no-store"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerMethodErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "no_albums: no albums for this listening period",
+            "headers": {
+              "Cache-Control": {
+                "style": "simple",
+                "required": true,
+                "schema": {
+                  "enum": [
+                    "no-store"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerErrorHTTPResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal_error: collage generation failed",
+            "headers": {
+              "Cache-Control": {
+                "style": "simple",
+                "required": true,
+                "schema": {
+                  "enum": [
+                    "no-store"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerErrorHTTPResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "upstream_error: could not retrieve Last.fm data",
+            "headers": {
+              "Cache-Control": {
+                "style": "simple",
+                "required": true,
+                "schema": {
+                  "enum": [
+                    "no-store"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerErrorHTTPResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "busy: another generation is running",
+            "headers": {
+              "Cache-Control": {
+                "style": "simple",
+                "required": true,
+                "schema": {
+                  "enum": [
+                    "no-store"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerErrorHTTPResponse"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "timeout: generation exceeded 60 seconds",
+            "headers": {
+              "Cache-Control": {
+                "style": "simple",
+                "required": true,
+                "schema": {
+                  "enum": [
+                    "no-store"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerErrorHTTPResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-forbid-unknown-query": true
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ServerErrorDetail": {
+        "required": [
+          "code",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ServerErrorHTTPResponse": {
+        "required": [
+          "error"
+        ],
+        "type": "object",
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ServerErrorDetail"
+          }
+        }
+      },
+      "ServerGridSize": {
+        "maximum": 10,
+        "minimum": 3,
+        "type": "integer",
+        "default": 5
+      },
+      "ServerListeningPeriod": {
+        "enum": [
+          "7day",
+          "1month",
+          "3month",
+          "6month",
+          "12month",
+          "overall"
+        ],
+        "type": "string",
+        "default": "7day"
+      },
+      "ServerMethodErrorResponse": {
+        "required": [
+          "error"
+        ],
+        "type": "object",
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ServerErrorDetail"
+          }
+        }
+      }
+    }
+  }
+}

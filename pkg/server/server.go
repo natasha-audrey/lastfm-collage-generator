@@ -11,9 +11,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
-	"net/url"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
@@ -50,45 +48,14 @@ func newHandler(generate generateFunc, timeout time.Duration) http.Handler {
 func writeError(w http.ResponseWriter, status int, code, message string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(map[string]any{
-		"error": map[string]string{"code": code, "message": message},
-	})
-}
-
-func parseOptions(raw string) (options, error) {
-	result := options{period: timeframe.Week, size: 5}
-	q, err := url.ParseQuery(raw)
-	if err != nil {
-		return result, errors.New("invalid query string")
-	}
-	for key, values := range q {
-		if key != "user" && key != "timeframe" && key != "size" {
-			return result, fmt.Errorf("unknown parameter %q", key)
-		}
-		if len(values) != 1 {
-			return result, fmt.Errorf("duplicate parameter %q", key)
-		}
-	}
-	result.user = strings.TrimSpace(q.Get("user"))
-	if result.user == "" {
-		return result, errors.New("user is required")
-	}
-	if q.Has("timeframe") {
-		result.period, err = timeframe.ParseString(q.Get("timeframe"))
-		if err != nil {
-			return result, errors.New("invalid timeframe")
-		}
-	}
-	if q.Has("size") {
-		result.size, err = strconv.Atoi(q.Get("size"))
-		if err != nil || result.size < 3 || result.size > 10 {
-			return result, errors.New("size must be an integer between 3 and 10")
-		}
-	}
-	return result, nil
+	_ = json.NewEncoder(w).Encode(errorResponse{Error: errorDetail{Code: code, Message: message}})
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control", cacheControl)
+	if serveDocumentation(w, r) {
+		return
+	}
 	ctx, finish := logging.Start(r.Context(), "server")
 	r = r.WithContext(ctx)
 	outcome, status := "cancelled", 0
@@ -108,8 +75,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		outcome, status = name, code
 		writeError(w, code, name, message)
 	}
-	w.Header().Set("Cache-Control", "no-store")
-	if r.URL.Path != "/v1/generate" {
+	if r.URL.Path != generatePath {
 		fail(404, "not_found", "endpoint not found")
 		return
 	}
@@ -119,7 +85,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var err error
-	opts, err = parseOptions(r.URL.RawQuery)
+	opts, err = decodeOptions(r.URL.RawQuery)
 	if err != nil {
 		cause = err
 		fail(400, "invalid_request", err.Error())
